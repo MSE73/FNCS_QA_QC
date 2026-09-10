@@ -16,6 +16,18 @@ No web UI, no database, no run history — each invocation is a stateless one-sh
 
 **Equipment tagging** (item 12 — every equipment tagged + present in an equipment schedule) ships as an **opt-in, disabled-by-default** check, since tags today are plain TEXT/MTEXT near equipment (not attributed blocks) and there's no strict current standard — it's heuristic (proximity text-match), not a hard drawing-cleanliness rule.
 
+## Status (2026-09-10)
+
+Phase 1 is implemented, tested (34 passing tests), and pushed to `origin/main`
+(`cf164d8`). The operating procedure for running it — roles, step-by-step usage,
+severity/exception handling, troubleshooting — is written up separately in
+`docs/PROCEDURE.md` (`d81478a`).
+
+**Outstanding before rollout to the junior engineers:** the real-folder
+acceptance gate described in Testing/verification below has not run yet — this
+is the actual go/no-go, since synthetic test fixtures validate mechanics, not
+real firm drawing conventions.
+
 ## Tech stack
 
 - **Python 3.11+** (3.14.4 already on this machine)
@@ -142,6 +154,11 @@ Every loader does case-insensitive/trimmed header matching and raises a specific
 ## Rollout of this plan
 
 Once approved: this plan is saved as `docs/PHASE1_PLAN.md` in the repo, committed, and pushed to GitHub (`origin/main`) as the first step. Implementation then proceeds automatically through the structure above (scaffolding → converters → dxf/reference scanner → checks → excelio → report → CLI wiring → tests) without pausing for approval between files, committing progress along the way; the user will be notified when Phase 1 is functional and ready for the real-folder acceptance test described in Testing/verification.
+
+**Done:** implementation, tests, and the operating procedure (`docs/PROCEDURE.md`)
+are complete and pushed. **Remaining:** run the real-folder acceptance test, then
+this plan can be considered closed and superseded by whatever Phase 2 planning
+follows.
 
 ## One-time setup
 
