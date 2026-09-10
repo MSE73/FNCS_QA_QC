@@ -1,0 +1,4 @@
+# Copy to fncsqaqc.toml in your project folder, or to
+# %APPDATA%\fncsqaqc\config.toml for a machine-wide default.
+
+oda_converter_path = "C:\\Program Files\\ODA\\ODAFileConverter_26_7_0\\ODAFileConverter.exe"
