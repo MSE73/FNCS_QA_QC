@@ -191,3 +191,15 @@ This did not change the FAIL/WARN counts from the acceptance run (color has no
 bearing on the `layer_names` check) — it only affects what the drawings look like
 plotted. Not verified with an actual plot (no AutoCAD/plotter in this pipeline);
 worth spot-checking on paper before treating this as final.
+
+The same pass was then done for plumbing (103 layers). Plumbing systems are
+typically drawn on their own dedicated sheet (`P0101 DRAINAGE`, `P0201 WATER`,
+`P0401 LPG`, ...) rather than mixed on one sheet the way HVAC duct+pipe often
+are, so the color is assigned per **system**, not per subtype: Water=5(blue),
+Drainage=3(green), Fuel=1(red), Medical gases=2(yellow), Steam=4(cyan), and the
+lower-prevalence Ammonia/Compressed-air/Swimming-pool systems share 11(pink)
+since they're unlikely to coexist on the same sheet. This also fixed two
+layers (`P_AMON_5_PIP-NH3-GAS_`, `P_MGAS_5_PIP-MA7`/`MA7-DL`) that had been
+using color 135 — a near-invisible 0.05mm hairline in this CTB, almost
+certainly unintentional. `scratch/apply_plumbing_print_hierarchy.py` has the
+full mapping. Text and insulation-overlay layers untouched, same as mechanical.
