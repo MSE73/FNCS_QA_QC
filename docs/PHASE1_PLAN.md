@@ -156,9 +156,15 @@ Every loader does case-insensitive/trimmed header matching and raises a specific
 Once approved: this plan is saved as `docs/PHASE1_PLAN.md` in the repo, committed, and pushed to GitHub (`origin/main`) as the first step. Implementation then proceeds automatically through the structure above (scaffolding → converters → dxf/reference scanner → checks → excelio → report → CLI wiring → tests) without pausing for approval between files, committing progress along the way; the user will be notified when Phase 1 is functional and ready for the real-folder acceptance test described in Testing/verification.
 
 **Done:** implementation, tests, and the operating procedure (`docs/PROCEDURE.md`)
-are complete and pushed. **Remaining:** run the real-folder acceptance test, then
-this plan can be considered closed and superseded by whatever Phase 2 planning
-follows.
+are complete and pushed. The real-folder acceptance test described above has now
+run (2026-09-12, against F12-04-233 Bashar Villa's Mechanical Package): it found
+and fixed a real crash bug (the reference scanner choked on AutoCAD extension
+entities like `ARCALIGNEDTEXT`), completed cleanly afterward, and surfaced a
+genuine firm-wide layer-naming drift between the written standard and current
+drafting practice — see `docs/PROCEDURE.md` §11. **Remaining:** the senior owner
+of `FNCS_CAD_Layers.ods`/the master AutoCAD template needs to decide which layer
+convention the firm actually wants going forward; once that's settled, this plan
+can be considered closed and superseded by whatever Phase 2 planning follows.
 
 ## One-time setup
 

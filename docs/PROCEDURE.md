@@ -124,3 +124,28 @@ blocks, and there is no strict current standard to check against.
 | Rev | Date | Description |
 |---|---|---|
 | 0 | 2026-09-10 | Initial issue — Phase 1 (drawing cleanliness + folder/deliverables completeness) |
+| 1 | 2026-09-12 | Real-folder acceptance test run against a live submission (F12-04-233 Bashar Villa, Mechanical Package). Found and fixed a crash on AutoCAD extension entities (e.g. `ARCALIGNEDTEXT`) in the purge/reference scanner. Also surfaced a firm-wide layer-naming drift — see §11. |
+
+## 11. Known issue: layer-naming standard vs. current practice
+
+The acceptance-test run against F12-04-233 flagged ~800 layer-name FAILs. Sampling
+real drawings (via this tool's own ODA/ezdxf pipeline) from three independent recent
+projects — F12-04-233 (2026-08), Juniors Zarka (2025-10), Al Muttran School
+(2024-11) — showed this is not project-specific drafting error: mechanical layer
+naming firm-wide has drifted from the written standard's underscore style
+(`M_HVAC_2_DUT-HD`) to a hyphen, one-layer-per-object style (`M-HVAC-DUCT-12`)
+sometime between early 2023 and late 2024, and has stayed that way since. The
+master AutoCAD template (`MEP - Sharing\CAD Standard\MECHANICAL STANDARD.dwg`)
+still uses the old underscore convention as of a March 2026 edit.
+
+`FNCS_CAD_Layers.ods` has been updated (2026-09-12) to accept the well-evidenced
+hyphen-style mechanical layer names as alternates alongside the existing
+underscore rows — neither convention fails compliance for now. Deliberately NOT
+accepted: color/linetype for the numbered-instance layers (observed to vary
+per-instance, not a real standard), plumbing hyphen names (too inconsistent
+across projects to bless yet), and a third `M1-`/`M2-`/.../`M5-` scale-fused-prefix
+variant also seen in current drawings. **Open decision for the senior owner:**
+whether to formally adopt the hyphen/per-object convention firm-wide (and update
+the master template + retrain), revert practice to the written standard, or
+something else — this file update only stops the tool from flagging what's
+already normal practice; it doesn't resolve which convention is "correct."
