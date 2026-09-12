@@ -161,10 +161,13 @@ run (2026-09-12, against F12-04-233 Bashar Villa's Mechanical Package): it found
 and fixed a real crash bug (the reference scanner choked on AutoCAD extension
 entities like `ARCALIGNEDTEXT`), completed cleanly afterward, and surfaced a
 genuine firm-wide layer-naming drift between the written standard and current
-drafting practice — see `docs/PROCEDURE.md` §11. **Remaining:** the senior owner
-of `FNCS_CAD_Layers.ods`/the master AutoCAD template needs to decide which layer
-convention the firm actually wants going forward; once that's settled, this plan
-can be considered closed and superseded by whatever Phase 2 planning follows.
+drafting practice. The senior owner has since decided the go-forward mechanical
+layer standard (hyphen separator, category-based, no per-instance numbering) and
+`FNCS_CAD_Layers.ods` has been rebuilt to match — see `docs/PROCEDURE.md` §11.
+**Remaining:** update the master AutoCAD template to the new layer set and retrain
+drafters off per-instance numbering (outside this tool's scope); once that's
+done, this plan can be considered closed and superseded by whatever Phase 2
+planning follows.
 
 ## One-time setup
 

@@ -124,28 +124,44 @@ blocks, and there is no strict current standard to check against.
 | Rev | Date | Description |
 |---|---|---|
 | 0 | 2026-09-10 | Initial issue — Phase 1 (drawing cleanliness + folder/deliverables completeness) |
-| 1 | 2026-09-12 | Real-folder acceptance test run against a live submission (F12-04-233 Bashar Villa, Mechanical Package). Found and fixed a crash on AutoCAD extension entities (e.g. `ARCALIGNEDTEXT`) in the purge/reference scanner. Also surfaced a firm-wide layer-naming drift — see §11. |
+| 1 | 2026-09-12 | Real-folder acceptance test run against a live submission (F12-04-233 Bashar Villa, Mechanical Package). Found and fixed a crash on AutoCAD extension entities (e.g. `ARCALIGNEDTEXT`) in the purge/reference scanner. Also surfaced a firm-wide layer-naming drift, resolved same day — see §11. |
 
-## 11. Known issue: layer-naming standard vs. current practice
+## 11. Resolved: mechanical layer naming standard (2026-09-12)
 
 The acceptance-test run against F12-04-233 flagged ~800 layer-name FAILs. Sampling
 real drawings (via this tool's own ODA/ezdxf pipeline) from three independent recent
 projects — F12-04-233 (2026-08), Juniors Zarka (2025-10), Al Muttran School
-(2024-11) — showed this is not project-specific drafting error: mechanical layer
-naming firm-wide has drifted from the written standard's underscore style
-(`M_HVAC_2_DUT-HD`) to a hyphen, one-layer-per-object style (`M-HVAC-DUCT-12`)
-sometime between early 2023 and late 2024, and has stayed that way since. The
-master AutoCAD template (`MEP - Sharing\CAD Standard\MECHANICAL STANDARD.dwg`)
-still uses the old underscore convention as of a March 2026 edit.
+(2024-11) — showed this was not project-specific drafting error but two firm-wide
+drifts from the written standard, since early-to-late 2023:
 
-`FNCS_CAD_Layers.ods` has been updated (2026-09-12) to accept the well-evidenced
-hyphen-style mechanical layer names as alternates alongside the existing
-underscore rows — neither convention fails compliance for now. Deliberately NOT
-accepted: color/linetype for the numbered-instance layers (observed to vary
-per-instance, not a real standard), plumbing hyphen names (too inconsistent
-across projects to bless yet), and a third `M1-`/`M2-`/.../`M5-` scale-fused-prefix
-variant also seen in current drawings. **Open decision for the senior owner:**
-whether to formally adopt the hyphen/per-object convention firm-wide (and update
-the master template + retrain), revert practice to the written standard, or
-something else — this file update only stops the tool from flagging what's
-already normal practice; it doesn't resolve which convention is "correct."
+1. **Separator style:** underscore (`M_HVAC_2_DUT-HD`) drifted to hyphen
+   (`M-HVAC-DUCT-12`).
+2. **Layer granularity:** the written standard's per-function categories
+   (e.g. separate layers for supply/return/exhaust duct, per-grille-type,
+   etc.) drifted to one layer per drawn object (`M-HVAC-DUCT-1` through
+   `-40`, `M-EQPM-1` through `-10`, and similar), with color/linetype unset
+   and varying per instance.
+
+**Senior decision:** hyphen is adopted as the go-forward separator style, but
+per-object numbering is rejected — layers stay category-based. `FNCS_CAD_Layers.ods`
+was rebuilt accordingly (`scratch/rebuild_layers_ods.py`, not part of the shipped
+tool): every mechanical (`M_`) row's name had `_` replaced with `-`, preserving the
+real color/linetype/lineweight from the master template export and every
+functional category from the written standard (e.g. `M_HVAC_2_DUT-HD` →
+`M-HVAC-2-DUT-HD`). The 87 per-instance-numbered/duplicate rows added as the
+2026-09-11 stopgap were removed — their geometry belongs on the existing
+hyphenated category layers instead (duct annotation → `M-HVAC-2-TXT-1-*`;
+centerlines → `M-GEN-1-CETR`; equipment → `M-GEN-2-EQUP` / `M-CONT-2-EQUP`).
+Twelve genuinely new general-purpose hyphen layers observed in current practice
+that the written standard had no equivalent for (`M-TEXT`, `M-REV`, `M-NODE`,
+`M-CEN`, `M-DETL-GENF`, `M-DETL-PIPE`, `M-ANNO-PATT`, `M-ANNO-SYMB`, `M-HATCH`,
+`M-HVAC-DUCT-IDEN`, `M-HVAC-CDFF-IDEN`, `M-EQPM-IDEN`) were kept, one row each.
+Plumbing and fire layers are untouched — plumbing hyphen usage was too
+inconsistent across projects to standardize yet (open item, revisit later).
+
+**Outstanding follow-up (not done by this tool):** the master AutoCAD template
+(`MEP - Sharing\CAD Standard\MECHANICAL STANDARD.dwg`, still underscore-style as of
+a March 2026 edit) needs to be updated to the new hyphenated category layers, and
+drafters need to be retrained off per-instance numbering. Until the template is
+updated, new drawings copied from it will still seed the old underscore layers —
+expect a transition period of mixed usage.
