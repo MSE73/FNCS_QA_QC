@@ -165,3 +165,29 @@ a March 2026 edit) needs to be updated to the new hyphenated category layers, an
 drafters need to be retrained off per-instance numbering. Until the template is
 updated, new drawings copied from it will still seed the old underscore layers —
 expect a transition period of mixed usage.
+
+### Print-hierarchy color pass (2026-09-13)
+
+Checking the mechanical colors against the firm's actual mechanical plot style
+(`MEP - Sharing\CAD Standard\PIOT STYLE ELECTRICAL\Mech PLOT.ctb`, read with
+`ezdxf.addons.acadctb`) found that 244 of 255 ACI colors plot at a flat 0.13mm —
+meaning nearly every mechanical layer's carefully chosen on-screen color (e.g.
+supply-duct-HP vs -LP) collapsed to the same line weight in print, while text/
+hatch/xref layers plotted bolder (0.20mm) than the system geometry itself.
+
+37 duct/pipe **run-geometry** layers (both `_5_` double-line and `_6_...-SL`
+single-line variants) were remapped onto the 6 distinct bold-plotting ACI colors
+this CTB has (1 red / 2 yellow / 3 green / 4 cyan / 5 blue / 11 pink), grouped by
+system: supply=5, return=3, exhaust=1, fresh air=2, other duct (chimney/transfer/
+dust)=11, all piping=4. Symbols, equipment, text, hatch, centerlines, and
+background-reference layers were left untouched. **Trade-off accepted:** HP/LP
+sub-variants within a family now share one color (e.g. supply-HP and supply-LP
+are both blue) — that distinction is no longer color-coded, only tag-text-coded.
+The 3 tag layers (`M-HVAC-DUCT-IDEN`, `M-HVAC-CDFF-IDEN`, `M-EQPM-IDEN`) had no
+color recorded at all; they're now set to 7 (white/black) like other text layers.
+`scratch/apply_print_hierarchy.py` has the full before/after mapping.
+
+This did not change the FAIL/WARN counts from the acceptance run (color has no
+bearing on the `layer_names` check) — it only affects what the drawings look like
+plotted. Not verified with an actual plot (no AutoCAD/plotter in this pipeline);
+worth spot-checking on paper before treating this as final.
