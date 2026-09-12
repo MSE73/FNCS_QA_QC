@@ -16,17 +16,34 @@ No web UI, no database, no run history — each invocation is a stateless one-sh
 
 **Equipment tagging** (item 12 — every equipment tagged + present in an equipment schedule) ships as an **opt-in, disabled-by-default** check, since tags today are plain TEXT/MTEXT near equipment (not attributed blocks) and there's no strict current standard — it's heuristic (proximity text-match), not a hard drawing-cleanliness rule.
 
-## Status (2026-09-10)
+## Status (2026-09-13)
 
-Phase 1 is implemented, tested (34 passing tests), and pushed to `origin/main`
-(`cf164d8`). The operating procedure for running it — roles, step-by-step usage,
-severity/exception handling, troubleshooting — is written up separately in
-`docs/PROCEDURE.md` (`d81478a`).
+Phase 1 is implemented, tested (37 passing tests), pushed to `origin/main`, and
+the real-folder acceptance gate has run and closed out (`docs/PROCEDURE.md`
+§10–11). The operating procedure — roles, step-by-step usage, severity/exception
+handling, troubleshooting — is in `docs/PROCEDURE.md`.
 
-**Outstanding before rollout to the junior engineers:** the real-folder
-acceptance gate described in Testing/verification below has not run yet — this
-is the actual go/no-go, since synthetic test fixtures validate mechanics, not
-real firm drawing conventions.
+Since the acceptance run (all 2026-09-12/13, see `docs/PROCEDURE.md` for detail):
+- Fixed a crash on AutoCAD extension entities (e.g. `ARCALIGNEDTEXT`) in the
+  reference scanner.
+- Resolved the mechanical layer-naming drift the acceptance run surfaced: hyphen
+  separator adopted as the go-forward standard, per-instance-numbered layers
+  rejected in favor of category layers. `FNCS_CAD_Layers.ods` rebuilt to match.
+- Fixed a second bug found while re-verifying that decision: the `layer_names`
+  check only skipped still-attached xref layers (`xref|layer`), not AutoCAD's
+  Bind-renamed form (`xref$0$layer`) — was misattributing the architect's
+  background layers to the mechanical file.
+- Reassigned mechanical (37 layers) and plumbing (103 layers) colors for a clear
+  print hierarchy, checked against the firm's actual plot style table
+  (`Mech PLOT.ctb`) rather than guessed — system/duct/pipe run geometry now
+  plots bolder than its own annotation. Not yet verified against an actual
+  paper/PDF plot.
+
+**Outstanding, not this tool's job:** update the master AutoCAD template to the
+new hyphenated/category mechanical layers and retrain drafters off per-instance
+numbering; do the same naming-drift check for plumbing (deferred — too
+inconsistent across projects so far) and the print-hierarchy pass for fire
+layers; spot-check the new colors on an actual plot.
 
 ## Tech stack
 
