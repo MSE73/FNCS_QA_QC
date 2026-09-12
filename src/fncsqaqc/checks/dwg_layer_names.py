@@ -1,15 +1,20 @@
 """Checks that every layer used in a DWG/DXF is part of the firm's approved
-layer standard. Xref-bound layer names (e.g. "ARCH-BG|A-WALL") are always
-skipped since they belong to the architect's background, not this file."""
+layer standard. Xref layer names are always skipped since they belong to the
+other discipline's background, not this file — whether still attached
+("ARCH-BG|A-WALL") or bound into this file (AutoCAD's Bind renames them
+"ARCH-BG$0$A-WALL", incrementing the number on repeated binds)."""
 from __future__ import annotations
 
 import difflib
+import re
 
 from fncsqaqc.checks.base import CheckContext
 from fncsqaqc.models import CheckResult, Severity
 
 CHECK_ID = "layer_names"
 CHECK_NAME = "Layer Name Compliance"
+
+_XREF_BOUND = re.compile(r"^[^$]+\$\d+\$.+$")
 
 
 def run(ctx: CheckContext) -> list[CheckResult]:
@@ -21,8 +26,8 @@ def run(ctx: CheckContext) -> list[CheckResult]:
 
     for layer in ctx.doc.layers:
         name = layer.dxf.name
-        if "|" in name:
-            continue  # xref-bound layer, not this file's responsibility
+        if "|" in name or _XREF_BOUND.match(name):
+            continue  # xref layer (attached or bound), not this file's responsibility
         if name.strip().upper() in approved | {"0", "DEFPOINTS"}:
             continue
 

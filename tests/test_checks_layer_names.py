@@ -41,3 +41,10 @@ def test_xref_bound_layer_is_skipped():
     standard = LayerStandard(layers=[], text_styles=[])
     results = run(_ctx(doc, standard))
     assert results == []
+
+
+def test_xref_bind_renamed_layer_is_skipped():
+    doc = factories.make_doc_with_bound_xref_layer()
+    standard = LayerStandard(layers=[], text_styles=[])
+    results = run(_ctx(doc, standard))
+    assert results == []

@@ -51,6 +51,12 @@ def make_doc_with_xref_layer() -> Drawing:
     return doc
 
 
+def make_doc_with_bound_xref_layer() -> Drawing:
+    doc = ezdxf.new("R2018")
+    doc.layers.add("ARCH$0$A-WALL")
+    return doc
+
+
 def make_doc_with_wrong_font_style() -> Drawing:
     doc = ezdxf.new("R2018")
     doc.styles.add("MEP-DUCT-TAG", font="arial.ttf")
