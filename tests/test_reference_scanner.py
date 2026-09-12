@@ -1,4 +1,7 @@
-from fncsqaqc.dxf.reference_scanner import is_purgeable_block_name, scan
+from ezdxf.entities.dxfentity import DXFTagStorage
+from ezdxf.lldxf.const import DXFAttributeError
+
+from fncsqaqc.dxf.reference_scanner import _get, is_purgeable_block_name, scan
 
 from tests import factories
 
@@ -48,3 +51,33 @@ def test_inserted_block_is_used():
     doc = factories.make_doc_with_scaled_text_in_block()
     graph = scan(doc)
     assert graph.is_block_used("TagBlock")
+
+
+def test_get_returns_default_when_attribute_is_not_valid_for_entity_type():
+    """Reproduces a real crash: ezdxf's DXFNamespace.get() raises
+    DXFAttributeError (not just returning the default) for AutoCAD extension
+    entities like ARCALIGNEDTEXT, which it loads as DXFTagStorage -- a bare
+    DXFEntity without the common "layer"/"linetype" attributes registered."""
+
+    class _RaisingDXFNamespace:
+        def get(self, key, default=None):
+            raise DXFAttributeError(f"invalid DXF attribute '{key}' for entity 'ARCALIGNEDTEXT'")
+
+    class _FakeUnsupportedEntity:
+        dxf = _RaisingDXFNamespace()
+
+    entity = _FakeUnsupportedEntity()
+    assert _get(entity, "layer") is None
+    assert _get(entity, "linetype", default="BYLAYER") == "BYLAYER"
+
+
+def test_scan_skips_entity_with_no_valid_layer_attribute():
+    """DXFTagStorage is what ezdxf actually loads AutoCAD extension entities
+    (ARCALIGNEDTEXT, etc.) as -- a bare DXFEntity with no "layer"/"linetype"
+    attributes registered, so .dxf.get() raises rather than returning the
+    default. scan() must tolerate that instead of crashing the whole run."""
+    doc = factories.make_doc_with_unused_layer()
+    doc.modelspace().entity_space.add(DXFTagStorage())
+
+    graph = scan(doc)  # must not raise
+    assert graph.is_layer_used("USED-LAYER")

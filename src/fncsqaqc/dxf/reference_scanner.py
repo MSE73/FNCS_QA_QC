@@ -15,8 +15,10 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from typing import Any
 
 from ezdxf.document import Drawing
+from ezdxf.lldxf.const import DXFAttributeError
 
 RESERVED_LAYERS = {"0", "DEFPOINTS"}
 RESERVED_STYLES = {"STANDARD"}
@@ -24,6 +26,17 @@ RESERVED_LINETYPES = {"CONTINUOUS", "BYLAYER", "BYBLOCK"}
 
 _STYLE_BEARING_TYPES = {"TEXT", "MTEXT", "ATTRIB", "ATTDEF"}
 _INLINE_FONT_OVERRIDE_RE = re.compile(r"\\f([^;]*);", re.IGNORECASE)
+
+
+def _get(entity, key: str, default: Any = None) -> Any:
+    """entity.dxf.get() raises DXFAttributeError (not just returning the
+    default) when `key` isn't a valid attribute for this entity type at all
+    -- true for AutoCAD extension entities like ARCALIGNEDTEXT that ezdxf
+    loads without the full common-attribute set."""
+    try:
+        return entity.dxf.get(key, default)
+    except DXFAttributeError:
+        return default
 
 
 @dataclass
@@ -78,16 +91,16 @@ def scan(doc: Drawing) -> ReferenceGraph:
         for entity in block:
             dxftype = entity.dxftype()
 
-            layer = entity.dxf.get("layer", None)
+            layer = _get(entity, "layer")
             if layer:
                 graph.used_layers.add(layer)
 
-            linetype = entity.dxf.get("linetype", None)
+            linetype = _get(entity, "linetype")
             if linetype and linetype.upper() not in ("BYLAYER", "BYBLOCK"):
                 graph.used_linetypes.add(linetype)
 
             if dxftype in _STYLE_BEARING_TYPES:
-                style = entity.dxf.get("style", None)
+                style = _get(entity, "style")
                 if style:
                     graph.used_styles.add(style)
                 if dxftype == "MTEXT":
@@ -95,12 +108,12 @@ def scan(doc: Drawing) -> ReferenceGraph:
                         graph.inline_font_overrides.setdefault(block_name, []).append(match.group(1))
 
             if dxftype == "DIMENSION":
-                dimstyle = entity.dxf.get("dimstyle", None)
+                dimstyle = _get(entity, "dimstyle")
                 if dimstyle:
                     graph.used_dimstyles.add(dimstyle)
 
             if dxftype == "INSERT":
-                target = entity.dxf.get("name", None)
+                target = _get(entity, "name")
                 if target:
                     children.add(target)
 

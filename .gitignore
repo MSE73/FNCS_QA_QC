@@ -7,3 +7,4 @@ dist/
 .pytest_cache/
 QAQC_Report_*.xlsx
 fncsqaqc.toml
+scratch/
