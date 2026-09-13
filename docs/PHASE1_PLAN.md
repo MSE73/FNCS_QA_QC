@@ -99,10 +99,24 @@ template (`MECHANICAL STANDARD.backup_20260913_235647.dwg`, same folder),
 round-tripped it through ODA (DWG→DXF), updated the 14 `_5_PIP` fire layer
 colors with `ezdxf` to match the decided mapping, converted back (DXF→DWG),
 and verified layer/block/entity counts matched before replacing the original.
-The mechanical/plumbing color passes and the hyphenated/category layer-naming
-decision are **still not applied to this template** — same outstanding item
-as before, now narrower in scope (fire is done, mechanical/plumbing colors
-and the naming-convention update remain).
+
+**2026-09-14, mechanical + plumbing colors pushed too:** same procedure,
+same template (backed up again first:
+`MECHANICAL STANDARD.backup_20260914_000250.dwg`). Mechanical layers in the
+template still use the pre-decision underscore naming (e.g.
+`M_HVAC_5_DUCT_S-HP`) — translating `name.replace('_', '-')` gives the
+`FNCS_CAD_Layers.ods` name exactly (same transform `rebuild_layers_ods.py`
+used originally), so each of the 37 run-geometry mechanical layers was
+matched and recolored under its real template name; the 3 `*-IDEN` tag
+layers from `apply_print_hierarchy.py`'s `COLOR_CHANGES` don't exist in the
+template at all (newly-observed real-project layers, never part of the
+master standard) and were correctly skipped. Plumbing layers already share
+identical names between template and ods (no naming decision was ever made
+for plumbing), so all 103 matched directly with no translation. Verified the
+same way (layer/block/entity counts unchanged) before replacing. **The
+template's mechanical layer *naming* (still underscore, not hyphenated) and
+the plumbing naming-drift question are still open** — this only pushed
+colors, not the naming-convention decision itself.
 
 ## Tech stack
 
