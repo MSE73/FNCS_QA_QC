@@ -36,14 +36,19 @@ Since the acceptance run (all 2026-09-12/13, see `docs/PROCEDURE.md` for detail)
 - Reassigned mechanical (37 layers), plumbing (103 layers), and fire (14
   layers) colors for a clear print hierarchy, checked against the firm's
   actual plot style table (`Mech PLOT.ctb`) rather than guessed —
-  system/duct/pipe run geometry now plots bolder than its own annotation. Not
-  yet verified against an actual paper/PDF plot.
+  system/duct/pipe run geometry now plots bolder than its own annotation.
+  Simulated a spot-check (`scratch/spot_check_render.py`, no AutoCAD/plotter
+  available): rendered old-vs-new for a representative sample using the real
+  CTB lineweight table baked into DXF entities — every remapped sample
+  confirmed 0.13mm to 0.35mm as designed. Still not verified with one real
+  AutoCAD-to-PDF/paper plot (would additionally catch viewport overrides or
+  other AutoCAD-specific quirks).
 
 **Outstanding, not this tool's job:** update the master AutoCAD template to the
 new hyphenated/category mechanical layers and retrain drafters off per-instance
 numbering; do the same naming-drift check for plumbing (deferred — too
-inconsistent across projects so far); spot-check the new colors on an actual
-plot.
+inconsistent across projects so far); do one real AutoCAD plot to confirm the
+new colors, now that the simulated check has de-risked it.
 
 ## Tech stack
 

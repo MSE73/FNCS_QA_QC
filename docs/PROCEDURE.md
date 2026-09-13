@@ -216,6 +216,19 @@ standpipe (`PIP-HDR`, `PIP-LV`, `PIP-SC`, `PIP_SC-DL`)=1(red), Sprinkler
 `PIP_HRC`, `PIP_HRC-DL`)=3(green), Deluge (`PIP_DF`, `PIP_DF-SPR`)=2(yellow).
 14 `_5_PIP` run-geometry layers were remapped; the 7 `_2_` symbol/equipment
 layers and 3 `_2_TXT-` text layers were left untouched, same as mechanical and
-plumbing. `scratch/apply_fire_print_hierarchy.py` has the full mapping. Not
-verified against an actual plot, same caveat as the mechanical and plumbing
-passes.
+plumbing. `scratch/apply_fire_print_hierarchy.py` has the full mapping.
+
+**Simulated spot-check (2026-09-13):** without AutoCAD or a plotter available
+in this pipeline, `scratch/spot_check_render.py` validates the three passes a
+different way: it takes a representative layer from each system, looks up its
+color from the git commit right before that pass (old) and from the current
+sheet (new), resolves both through the same real Mech PLOT.ctb lineweight
+table the passes were designed against, bakes those exact lineweights into
+DXF `LINE` entities, and renders old-vs-new with ezdxf's drawing add-on so
+relative thickness in the output PNG matches what the CTB defines. Every
+remapped sample went from 0.13mm (old) to 0.35mm (new); the two untouched
+control layers (one mechanical, one fire) were unchanged, as expected. This
+confirms the color choices are correct against the actual CTB data — it is
+not, however, a substitute for one real AutoCAD-to-PDF/paper plot, which
+would additionally catch viewport plot-style overrides, layer freezes, or
+other AutoCAD-specific quirks this simulation can't see.
