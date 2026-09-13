@@ -286,11 +286,24 @@ pipe Ø) and compares against a **firm-wide velocity-limit reference table**
 (by type + system category — supply/return/exhaust duct, domestic
 cold/hot water, drainage self-cleansing minimum, fire protection, etc.),
 analogous to how `FNCS_Layer_Standard.xlsx` is the senior-owned firm-wide
-reference today. **Prerequisite, needs a senior decision before building:**
-which code basis sets those limit values — Jordanian code, SBC, or an
-ASHRAE/SMACNA fallback where local code is silent — same category of
-decision as the mechanical layer-naming and tag-numbering standards already
-resolved this session.
+reference today.
+
+**Code basis decided: ASHRAE/SMACNA (duct), ASPE Data Book / IPC (piping),
+as the default numeric source.** Reasoning: Jordan's own national codes in
+this area — the National Building Council's Mechanical Ventilation & A/C
+Code (1988) and Natural Ventilation & Plumbing Code (1992) — are old,
+narrow-scope regulatory documents; regional MEP practice (this firm's own
+calc package included — it's a Carrier HAP export, an ASHRAE-methodology
+tool, with no Jordanian-code reference anywhere in it) overwhelmingly relies
+on ASHRAE/SMACNA/ASPE for the actual numeric design criteria rather than an
+independently-authored national velocity table. **Caveat — this was not
+independently verified against the literal 1988/1992 code text** (not
+practically searchable/digitized); if the user or a colleague has direct
+access and finds a specific mandatory Jordanian value that conflicts with
+ASHRAE/SMACNA for a given category, that value should override the default.
+This is exactly why the reference table is planned as a firm-owned, editable
+Excel input rather than a hardcoded constant — swapping in a Jordan-specific
+number later is a data edit, not a code change.
 
 **Stretch goal, not MVP:** once schedule formats are more standardized,
 auto-populate/cross-check the sizing summary from `ACAD_TABLE` schedules
