@@ -232,3 +232,24 @@ confirms the color choices are correct against the actual CTB data — it is
 not, however, a substitute for one real AutoCAD-to-PDF/paper plot, which
 would additionally catch viewport plot-style overrides, layer freezes, or
 other AutoCAD-specific quirks this simulation can't see.
+
+## 12. Resolved: `drawings_list` check missed bundled-DWG layout tabs (2026-09-13)
+
+Reviewing the acceptance run's 32 "folder completeness" FAILs (all in
+`DrawingsList`, none in `FolderDeliverables`) against the real F12-04-233
+package found the check itself was wrong, not the submission: this firm
+routinely bundles several sheet numbers into one DWG as separate paperspace
+layout tabs — e.g. `M0101 HVAC SYSTEM-05.dwg` has no separate files for
+M0102/M0103/M0104, they're tabs inside that one DWG. `check_drawings`
+(`src/fncsqaqc/checks/folder_completeness.py`) only ever matched a required
+drawing's pattern against filenames in the folder, so every sheet number that
+lives as a tab rather than its own file was flagged "missing."
+
+Opening every cached DXF in `cad\MECH` and listing `doc.layouts.names_in_taborder()`
+showed **29 of the 32** "missing" drawings existed as a tab somewhere; only 3
+(`M0204`, `M0304`, `P0403`) were genuinely absent from any tab. Fixed by having
+the pipeline (`src/fncsqaqc/pipeline.py`) collect each DXF's non-Model layout
+names during the per-file check loop (the doc is already loaded, no extra
+conversion cost) and passing that map into `check_drawings`, which now
+matches a required drawing's pattern against layout tab names as well as
+filenames. Real-project FAIL count: 278 → 249.

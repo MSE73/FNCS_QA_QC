@@ -62,6 +62,8 @@ def run(options: RunOptions) -> RunResult:
         if f.relative_path in converted
     ] + [(str(f.relative_path), f.absolute_path) for f in dxf_files]
 
+    layout_names_by_file: dict[str, list[str]] = {}
+
     for relative_path, dxf_path in dxf_targets:
         load_result = dxf_loader.load(dxf_path)
 
@@ -88,6 +90,12 @@ def run(options: RunOptions) -> RunResult:
                 )
             )
 
+        layout_names_by_file[relative_path] = [
+            name
+            for name in load_result.doc.layouts.names_in_taborder()
+            if name.lower() != "model"
+        ]
+
         graph = scan_references(load_result.doc)
         ctx = CheckContext(
             relative_path=relative_path,
@@ -111,6 +119,6 @@ def run(options: RunOptions) -> RunResult:
                 )
 
     result.extend(check_deliverables(options.deliverables, files))
-    result.extend(check_drawings(options.drawings_list, files))
+    result.extend(check_drawings(options.drawings_list, files, layout_names_by_file))
 
     return result

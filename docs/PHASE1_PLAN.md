@@ -44,11 +44,25 @@ Since the acceptance run (all 2026-09-12/13, see `docs/PROCEDURE.md` for detail)
   AutoCAD-to-PDF/paper plot (would additionally catch viewport overrides or
   other AutoCAD-specific quirks).
 
+- Fixed a third bug found while reviewing the acceptance run's folder-
+  completeness FAILs: the `drawings_list` check only matched a required
+  drawing against filenames in the folder, never the paperspace layout tabs
+  inside a DWG — this firm routinely bundles several sheet numbers into one
+  DWG as separate tabs (e.g. `M0101 HVAC SYSTEM-05.dwg` internally contains
+  tabs `M0101`/`M0102`/`M0103`/`M0104`). 29 of the 32 "missing drawing" FAILs
+  on the real project were this false positive; only 3 (`M0204`, `M0304`,
+  `P0403`) were genuinely absent from any tab anywhere. `check_drawings` now
+  also matches against layout tab names, sourced from the DXF already loaded
+  for the per-file checks (no extra conversion/parsing cost). FAIL count on
+  the real project: 278 → 249.
+
 **Outstanding, not this tool's job:** update the master AutoCAD template to the
 new hyphenated/category mechanical layers and retrain drafters off per-instance
 numbering; do the same naming-drift check for plumbing (deferred — too
 inconsistent across projects so far); do one real AutoCAD plot to confirm the
-new colors, now that the simulated check has de-risked it.
+new colors, now that the simulated check has de-risked it; the 3 genuinely
+missing drawings (`M0204`, `M0304`, `P0403`) on the real project need producing
+or a client-side scope decision, not a tool fix.
 
 ## Tech stack
 

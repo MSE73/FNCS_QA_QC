@@ -61,20 +61,33 @@ def check_deliverables(
 
 
 def check_drawings(
-    items: list[DrawingListItem], files: list[DiscoveredFile]
+    items: list[DrawingListItem],
+    files: list[DiscoveredFile],
+    layout_names_by_file: dict[str, list[str]] | None = None,
 ) -> list[CheckResult]:
+    """A required drawing counts as found if either its own filename or a
+    paperspace layout tab inside any drawing file matches the expected
+    pattern -- this firm routinely bundles several sheet numbers as separate
+    layout tabs in one DWG (e.g. one file per system, one tab per floor)."""
     results: list[CheckResult] = []
     drawing_files = [
         f for f in files if f.kind.value in ("DWG", "DXF")
     ]
     paths = [str(f.relative_path) for f in drawing_files]
+    layout_names_by_file = layout_names_by_file or {}
     matched_paths: set[str] = set()
 
     for item in items:
         pattern = item.expected_pattern.strip() or f"*{item.drawing_no}*"
         matches = [p for p in paths if _matches(pattern, p)]
-        if matches:
+        layout_matches = [
+            p
+            for p, layouts in layout_names_by_file.items()
+            if any(_matches(pattern, layout) for layout in layouts)
+        ]
+        if matches or layout_matches:
             matched_paths.update(matches)
+            matched_paths.update(layout_matches)
         elif item.required:
             results.append(
                 CheckResult(
