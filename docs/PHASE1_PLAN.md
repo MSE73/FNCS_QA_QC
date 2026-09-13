@@ -251,6 +251,62 @@ Every loader does case-insensitive/trimmed header matching and raises a specific
 - `revit/handler.py` stub swaps for real logic (pyRevit CLI subprocess call, or a compiled add-in) as a one-file change once Revit automation is worth the investment.
 - Any check can be disabled per run via `--disable-check <id>` for gradual rollout.
 
+### Phase 2 spec: duct/pipe velocity check (drafted 2026-09-14, not yet built)
+
+Scoped in more detail after this session's manual review of F12-04-233 found
+no velocity verification anywhere in that project's calc package (see
+`docs/PROCEDURE.md`'s calc-review note) — this is the first Phase 2 item
+worth designing concretely rather than leaving as a one-line deferral.
+
+**The core problem:** verifying velocity needs two numbers per run — a
+design flow rate and an installed size — and today those live in different,
+disconnected places. Flow rate comes from whatever calc source the engineer
+used (HAP export, a pump-duty PDF, a spreadsheet — unstandardized per
+§Scope decision above). Installed size sometimes exists on the drawing side
+as a schedule (this session's `equipment_tags` work proved `ACAD_TABLE`
+schedules can be read via `entity.virtual_entities()` — e.g. the real
+project's Pumps Schedule has a `FLOW (L/S)` column, and other schedules list
+diameters), but schedule columns and coverage aren't standardized across
+disciplines or projects, and — as the equipment-tag leading-zero findings
+showed — tag names between calc and drawing don't always match cleanly
+either. Auto-deriving both flow and size reliably from arbitrary sources is
+not realistic as a first cut.
+
+**Proposed MVP: a structured sizing-summary input, not auto-parsing.**
+Mirrors how `Deliverables.xlsx`/`DrawingsList.xlsx` already work — a
+per-project Excel the engineer fills in (they already have this data from
+their own calc; this just asks them to summarize it in one place) rather
+than the tool trying to extract it from HAP/PDF/schedule sources directly:
+
+| Tag | Type (duct/pipe) | System | Design Flow (L/s) | Installed Size | Notes |
+|---|---|---|---|---|---|
+
+The check computes velocity from flow ÷ cross-sectional area (duct WxH or
+pipe Ø) and compares against a **firm-wide velocity-limit reference table**
+(by type + system category — supply/return/exhaust duct, domestic
+cold/hot water, drainage self-cleansing minimum, fire protection, etc.),
+analogous to how `FNCS_Layer_Standard.xlsx` is the senior-owned firm-wide
+reference today. **Prerequisite, needs a senior decision before building:**
+which code basis sets those limit values — Jordanian code, SBC, or an
+ASHRAE/SMACNA fallback where local code is silent — same category of
+decision as the mechanical layer-naming and tag-numbering standards already
+resolved this session.
+
+**Stretch goal, not MVP:** once schedule formats are more standardized,
+auto-populate/cross-check the sizing summary from `ACAD_TABLE` schedules
+using the same decoding approach already built for `equipment_tags`, instead
+of requiring fully manual entry. Not attempted first because schedule
+column layout still varies per discipline/project (as seen this session:
+the Pumps Schedule has flow but not pipe size; no schedule in the real
+project has both together).
+
+**Registration:** a new check module (e.g. `checks/code_compliance_velocity.py`)
+registered in `checks/registry.py` like every other check, writing FAIL
+(over limit) / WARN (missing size or flow data) into the already-reserved
+`CodeCompliance` report sheet. A new `--sizing-excel` CLI input, following
+the same case-insensitive header-matching and fail-fast-on-schema-error
+pattern as the three existing inputs.
+
 ## Testing/verification
 
 - Unit tests build synthetic in-memory DXF docs via `ezdxf.new()` — covers layer/style/height/purge logic without any real DWG or ODA involved.
