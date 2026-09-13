@@ -305,6 +305,26 @@ This is exactly why the reference table is planned as a firm-owned, editable
 Excel input rather than a hardcoded constant — swapping in a Jordan-specific
 number later is a data edit, not a code change.
 
+**Fire protection piping gets its own code basis: NFPA, not ASHRAE/SMACNA/ASPE.**
+Fire protection has its own dedicated, near-universally-used international
+standard body, with specific documented numeric velocity limits (unlike the
+general ASHRAE/SMACNA/ASPE decision above, these are confirmed, published
+values, not an inference from regional practice):
+
+| System (this firm's fire layer categories) | Standard | Max velocity |
+|---|---|---|
+| Standpipe / hydrant / landing valve / siamese connection | NFPA 14 | 20 ft/s (6.1 m/s) — mandatory |
+| Fire pump suction piping (10 pipe diameters upstream of the pump) | NFPA 20 | 15 ft/s (4.6 m/s) |
+| Sprinkler (branch, cross-main, drain) | NFPA 13 | No fixed limit — velocity is self-correcting under NFPA 13's required hydraulic calculation (minimum pressure/flow at the most remote head governs, not a velocity ceiling). Use FM Global's practical ceiling of 30 ft/s (9.1 m/s) only as a sanity-check bound above which Hazen-Williams itself becomes unreliable, not as a real limit to enforce. |
+| Hose reel (small-bore, occupant-use — distinct from NFPA 14's larger hose-station standpipe) | **Unconfirmed** — this firm's naming (`HOSE REEL CABINET` vs `HOSE RACK CABINET`) follows the British/European convention (BS EN 671-1/671-3), not NFPA's terminology, since NFPA doesn't have a directly equivalent small-reel category. Needs confirming against BS EN 671 before a limit is set here. |
+
+Deluge systems aren't a distinct NFPA velocity category — treat as sprinkler
+piping (NFPA 13) downstream of the deluge valve. Jordan Civil Defence
+enforces its own acceptance criteria (e.g. specific hydrostatic test
+pressures) but design-methodology practice regionally still follows NFPA for
+the actual hydraulic/velocity basis — same caveat as above applies if a
+specific Civil Defence circular is later found to mandate a different value.
+
 **Stretch goal, not MVP:** once schedule formats are more standardized,
 auto-populate/cross-check the sizing summary from `ACAD_TABLE` schedules
 using the same decoding approach already built for `equipment_tags`, instead
