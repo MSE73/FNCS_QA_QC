@@ -305,3 +305,34 @@ is now reported as INFO rather than FAIL/WARN, since it's a real
 inconsistency worth surfacing but not a genuinely missing or extra tag. A tag
 with no plausible match at all still fails/warns as before. Moved 19 findings
 (7 FAIL, 12 WARN) to INFO on the real project.
+
+## 14. Resolved: equipment tag numbering standard (2026-09-13)
+
+The equipment-tag reconciliation in §13 found real, firm-wide inconsistency
+in how the numeric part of a tag is formatted — not just drawing vs.
+schedule, but between drawings themselves: `DHWC-1` (`M0301`) vs `DHWC-01`
+(`P0201`); `RWO-1` (`P0901`) vs `RWO-01` (`M0G01`); `TWP-01` and `TWP-1`
+both used *in the same file* (`P0201 WATER SYSTEM`) for what's clearly one
+pump. Tallying every single-digit tag number found on the real project
+(F12-04-233): 2-digit zero-padded (`-01`, `-02`, ...) appears slightly more
+often than bare (`-1`, `-2`, ...), but the split is close enough that
+frequency alone doesn't settle it.
+
+**Standard:** the numeric part of every equipment tag is always 2-digit
+zero-padded — `AHU-01`, not `AHU-1`; `SU-04`, not `SU-4` — regardless of
+discipline. Reasons, not just precedent:
+
+- Fixed width sorts correctly as plain text in schedules/BOMs (`-09` before
+  `-10`) without needing numeric-aware sorting.
+- Avoids a formatting jump once a system passes 9 units (`-9` → `-10` reads
+  as a width change; `-09` → `-10` doesn't).
+  If a system ever exceeds 99 units, extend to 3 digits (`-100`) rather than
+  mixing widths.
+- It's already the majority convention on real drawings today, so this is
+  the smaller correction, not a wholesale rename.
+
+**Not yet enforced as a hard FAIL** — the `equipment_tags` check still
+reports a pure leading-zero mismatch as INFO (§13), since flipping it to
+FAIL firm-wide before any drafter has been told the standard would just be
+noise. Revisit once drafters are aware of this standard and new/updated
+drawings can reasonably be held to it.

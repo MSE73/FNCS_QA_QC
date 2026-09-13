@@ -87,8 +87,9 @@ inconsistent across projects so far); do one real AutoCAD plot to confirm the
 new colors, now that the simulated check has de-risked it; the 3 genuinely
 missing drawings (`M0204`, `M0304`, `P0403`) on the real project need producing
 or a client-side scope decision, not a tool fix; the leading-zero tag-numbering
-inconsistency the equipment-tag check surfaced needs a drafting-standard
-decision (pick one convention) before it's worth enforcing as a hard FAIL.
+inconsistency the equipment-tag check surfaced is resolved as a standard
+(2-digit zero-padded, `docs/PROCEDURE.md` §14) but not yet enforced as a hard
+FAIL — that's a follow-up once drafters know the standard exists.
 
 ## Tech stack
 
