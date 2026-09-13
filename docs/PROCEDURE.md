@@ -297,3 +297,11 @@ same equipment (`DHWC-1` vs `DHWC-01`; `P0201 WATER SYSTEM` itself uses both
 expected false positives — the tag-pattern regex also matches non-equipment
 text like drawing-index codes on `M0G00 LIST OF DRAWING.dwg` — this remains a
 heuristic, not an exact check, hence still opt-in.
+
+Matching itself stays strict (`SU-04` and `SU-4` are never merged into one
+tag — a real drafting-standard decision is still needed on which convention
+to use), but a mismatch that's *purely* a leading-zero formatting difference
+is now reported as INFO rather than FAIL/WARN, since it's a real
+inconsistency worth surfacing but not a genuinely missing or extra tag. A tag
+with no plausible match at all still fails/warns as before. Moved 19 findings
+(7 FAIL, 12 WARN) to INFO on the real project.
