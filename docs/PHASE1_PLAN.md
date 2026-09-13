@@ -56,13 +56,39 @@ Since the acceptance run (all 2026-09-12/13, see `docs/PROCEDURE.md` for detail)
   for the per-file checks (no extra conversion/parsing cost). FAIL count on
   the real project: 278 → 249.
 
+- Reworked the opt-in `equipment_tags` check (`--enable-equipment-tag-check`,
+  still off by default) — it was previously non-functional for real use in
+  two ways, both found by testing it against the real project: (1) it only
+  ever compared a drawing's tags against a schedule in the *same file*, but
+  this firm always keeps the schedule in its own drawing (`P0801
+  SCHEDULE-01.dwg`), separate from the layout drawings that place the tags;
+  (2) even after fixing that, it still found nothing, because this firm's
+  schedules are native AutoCAD table objects (`ACAD_TABLE`), not TEXT/MTEXT
+  on a layer named `*SCHED*` — ezdxf can't read table cells directly, but
+  `entity.virtual_entities()` decomposes a table into the TEXT/MTEXT it's
+  actually drawn from, which is now scanned as schedule content regardless
+  of layer. `collect()` now runs per-file during the main scan (cheap, reuses
+  the already-loaded doc) and `reconcile()` compares each file's tags against
+  the tag/schedule sets from every file in the run. Once both fixes were in,
+  the check surfaced genuinely real findings on the live project: widespread
+  leading-zero tag-numbering inconsistency (drawing tag `SU-04` vs schedule
+  entry `SU-4`; `EXF-01/02/03` vs `EXF-1/2/3`; `GLD-01` vs `GLD-1`; `IRRP-01`
+  vs `IRRP-1`), and even inconsistency between drawings for the same
+  equipment (`DHWC-1` in one file vs `DHWC-01` in another; `P0201 WATER
+  SYSTEM` uses both `TWP-01` and `TWP-1` for what's clearly the same pump).
+  Some remaining findings are known false positives from the tag-pattern
+  regex matching non-equipment text (e.g. drawing-index codes on `M0G00 LIST
+  OF DRAWING.dwg`) — expected, since this is a heuristic, not an exact check.
+
 **Outstanding, not this tool's job:** update the master AutoCAD template to the
 new hyphenated/category mechanical layers and retrain drafters off per-instance
 numbering; do the same naming-drift check for plumbing (deferred — too
 inconsistent across projects so far); do one real AutoCAD plot to confirm the
 new colors, now that the simulated check has de-risked it; the 3 genuinely
 missing drawings (`M0204`, `M0304`, `P0403`) on the real project need producing
-or a client-side scope decision, not a tool fix.
+or a client-side scope decision, not a tool fix; the leading-zero tag-numbering
+inconsistency the equipment-tag check surfaced needs a drafting-standard
+decision (pick one convention) before it's worth enforcing as a hard FAIL.
 
 ## Tech stack
 

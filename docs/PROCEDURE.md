@@ -264,3 +264,36 @@ names during the per-file check loop (the doc is already loaded, no extra
 conversion cost) and passing that map into `check_drawings`, which now
 matches a required drawing's pattern against layout tab names as well as
 filenames. Real-project FAIL count: 278 → 249.
+
+## 13. Reworked: equipment tag / schedule cross-check (2026-09-13)
+
+The opt-in `equipment_tags` check (`--enable-equipment-tag-check`, still off
+by default) was non-functional for real use, in two layers found by testing it
+against the real project:
+
+1. **Per-file, not project-wide.** It only compared a drawing's tags against
+   a schedule found in the *same file* — but this firm always keeps the
+   equipment schedule in its own drawing (`P0801 SCHEDULE-01.dwg`), separate
+   from every layout drawing that actually places the tags. Fixed by
+   splitting the check into `collect()` (per-file, runs during the main scan)
+   and `reconcile()` (project-wide, runs once at the end and compares each
+   file's tags against the tag/schedule sets gathered from every file).
+
+2. **Schedules are AutoCAD tables, not text on a `*SCHED*` layer.** Even
+   after the project-wide fix, the check still found nothing — this firm's
+   schedules are native `ACAD_TABLE` entities, and there is no `*SCHED*`
+   layer anywhere in the schedule drawing. ezdxf can't read table cells
+   directly, but `entity.virtual_entities()` decomposes a table into the
+   TEXT/MTEXT it's actually drawn from. Fixed by scanning that decomposition
+   and treating any `ACAD_TABLE`'s content as schedule tags regardless of
+   layer (a table only ever holds a schedule in this firm's drawings).
+
+With both fixes in, the check surfaces real findings on the live project — a
+firm-wide leading-zero tag-numbering inconsistency: drawing tag `SU-04` vs
+schedule entry `SU-4`; `EXF-01/02/03` vs `EXF-1/2/3`; `GLD-01` vs `GLD-1`;
+`IRRP-01` vs `IRRP-1`; and even inconsistency between two drawings for the
+same equipment (`DHWC-1` vs `DHWC-01`; `P0201 WATER SYSTEM` itself uses both
+`TWP-01` and `TWP-1` for what's clearly one pump). Some remaining findings are
+expected false positives — the tag-pattern regex also matches non-equipment
+text like drawing-index codes on `M0G00 LIST OF DRAWING.dwg` — this remains a
+heuristic, not an exact check, hence still opt-in.

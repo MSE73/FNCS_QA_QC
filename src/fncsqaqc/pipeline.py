@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from fncsqaqc.checks import dwg_equipment_tags
 from fncsqaqc.checks.base import CheckContext
 from fncsqaqc.checks.folder_completeness import check_deliverables, check_drawings
 from fncsqaqc.checks.registry import active_checks
@@ -54,7 +55,11 @@ def run(options: RunOptions) -> RunResult:
     )
     result.conversion_log.extend(conversion_log)
 
-    checks = active_checks(options.disabled_check_ids, options.enable_equipment_tags)
+    checks = active_checks(options.disabled_check_ids)
+    collect_equipment_tags = (
+        options.enable_equipment_tags and dwg_equipment_tags.CHECK_ID not in options.disabled_check_ids
+    )
+    equipment_tags_by_file: dict[str, dwg_equipment_tags.FileTags] = {}
 
     dxf_targets: list[tuple[str, Path]] = [
         (str(f.relative_path), converted[f.relative_path])
@@ -104,6 +109,9 @@ def run(options: RunOptions) -> RunResult:
             layer_standard=options.layer_standard,
         )
 
+        if collect_equipment_tags:
+            equipment_tags_by_file[relative_path] = dwg_equipment_tags.collect(ctx)
+
         for spec in checks:
             try:
                 result.extend(spec.fn(ctx))
@@ -120,5 +128,7 @@ def run(options: RunOptions) -> RunResult:
 
     result.extend(check_deliverables(options.deliverables, files))
     result.extend(check_drawings(options.drawings_list, files, layout_names_by_file))
+    if collect_equipment_tags:
+        result.extend(dwg_equipment_tags.reconcile(equipment_tags_by_file))
 
     return result
