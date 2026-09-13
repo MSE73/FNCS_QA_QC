@@ -80,9 +80,9 @@ Since the acceptance run (all 2026-09-12/13, see `docs/PROCEDURE.md` for detail)
   regex matching non-equipment text (e.g. drawing-index codes on `M0G00 LIST
   OF DRAWING.dwg`) — expected, since this is a heuristic, not an exact check.
 
-**Outstanding, not this tool's job:** update the master AutoCAD template to the
-new hyphenated/category mechanical layers and retrain drafters off per-instance
-numbering; do the same naming-drift check for plumbing (deferred — too
+**Outstanding, not this tool's job:** retrain drafters off per-instance
+numbering now that the master template uses hyphenated/category mechanical
+layers (template itself updated 2026-09-14, see below); do the same naming-drift check for plumbing (deferred — too
 inconsistent across projects so far); do one real AutoCAD plot to confirm the
 new colors, now that the simulated check has de-risked it; the 3 genuinely
 missing drawings (`M0204`, `M0304`, `P0403`) on the real project need producing
@@ -117,6 +117,25 @@ same way (layer/block/entity counts unchanged) before replacing. **The
 template's mechanical layer *naming* (still underscore, not hyphenated) and
 the plumbing naming-drift question are still open** — this only pushed
 colors, not the naming-convention decision itself.
+
+**2026-09-14, mechanical layer naming renamed to hyphenated in the template:**
+closed the naming half too. ezdxf has no built-in layer-rename helper, so
+this was done by hand: backed up again
+(`MECHANICAL STANDARD.backup_20260914_001029.dwg`), then for each of the 71
+`M_`-prefixed layers, renamed the LAYER table entry via
+`name.replace('_', '-')` and updated every entity across every block
+definition and layout whose `.dxf.layer` referenced the old name (only one
+layer, `M_HVAC_2_GRL-S`, was actually referenced by any entity — 13 entities
+inside a grille symbol block; everything else in this template is a bare
+layer-table entry with zero usage, confirmed via a full entity scan across
+blocks + layouts before touching anything). Checked for name collisions and
+duplicate rename targets first — none. Verified after: 231 layers (unchanged
+count), 0 leftover underscore `M_` names, 72 hyphenated `M-` layers (71
+renamed + the pre-existing `M-XREF`), 19 blocks, colors intact, and the 13
+entity references correctly repointed to the new name. The master template
+now matches `FNCS_CAD_Layers.ods` on both naming and color for mechanical,
+plumbing, and fire. Plumbing naming drift (deferred, too inconsistent across
+projects to standardize yet) remains the only open naming question.
 
 ## Tech stack
 
@@ -254,10 +273,10 @@ genuine firm-wide layer-naming drift between the written standard and current
 drafting practice. The senior owner has since decided the go-forward mechanical
 layer standard (hyphen separator, category-based, no per-instance numbering) and
 `FNCS_CAD_Layers.ods` has been rebuilt to match — see `docs/PROCEDURE.md` §11.
-**Remaining:** update the master AutoCAD template to the new layer set and retrain
-drafters off per-instance numbering (outside this tool's scope); once that's
-done, this plan can be considered closed and superseded by whatever Phase 2
-planning follows.
+**Remaining:** the master AutoCAD template has been updated to the new
+hyphenated layer set (2026-09-14); retraining drafters off per-instance
+numbering is still outside this tool's scope. Once that's done, this plan can
+be considered closed and superseded by whatever Phase 2 planning follows.
 
 ## One-time setup
 
