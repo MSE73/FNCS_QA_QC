@@ -33,17 +33,17 @@ Since the acceptance run (all 2026-09-12/13, see `docs/PROCEDURE.md` for detail)
   check only skipped still-attached xref layers (`xref|layer`), not AutoCAD's
   Bind-renamed form (`xref$0$layer`) — was misattributing the architect's
   background layers to the mechanical file.
-- Reassigned mechanical (37 layers) and plumbing (103 layers) colors for a clear
-  print hierarchy, checked against the firm's actual plot style table
-  (`Mech PLOT.ctb`) rather than guessed — system/duct/pipe run geometry now
-  plots bolder than its own annotation. Not yet verified against an actual
-  paper/PDF plot.
+- Reassigned mechanical (37 layers), plumbing (103 layers), and fire (14
+  layers) colors for a clear print hierarchy, checked against the firm's
+  actual plot style table (`Mech PLOT.ctb`) rather than guessed —
+  system/duct/pipe run geometry now plots bolder than its own annotation. Not
+  yet verified against an actual paper/PDF plot.
 
 **Outstanding, not this tool's job:** update the master AutoCAD template to the
 new hyphenated/category mechanical layers and retrain drafters off per-instance
 numbering; do the same naming-drift check for plumbing (deferred — too
-inconsistent across projects so far) and the print-hierarchy pass for fire
-layers; spot-check the new colors on an actual plot.
+inconsistent across projects so far); spot-check the new colors on an actual
+plot.
 
 ## Tech stack
 

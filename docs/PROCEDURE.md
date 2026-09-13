@@ -203,3 +203,19 @@ layers (`P_AMON_5_PIP-NH3-GAS_`, `P_MGAS_5_PIP-MA7`/`MA7-DL`) that had been
 using color 135 — a near-invisible 0.05mm hairline in this CTB, almost
 certainly unintentional. `scratch/apply_plumbing_print_hierarchy.py` has the
 full mapping. Text and insulation-overlay layers untouched, same as mechanical.
+
+The same pass was then done for fire (24 layers, `F_FIRE_...`, checked against
+the same shared `Mech PLOT.ctb`). Every fire layer's color plotted at the flat
+0.13mm weight — the same collapse problem as mechanical and plumbing before
+their passes. A fire-fighting layout sheet normally shows sprinkler,
+hydrant/standpipe, hose reel, and deluge piping together on one plan (like
+mechanical duct+pipe), not one system per sheet (like plumbing), so each
+**system** got its own distinct bold color rather than sharing one: Hydrant/
+standpipe (`PIP-HDR`, `PIP-LV`, `PIP-SC`, `PIP_SC-DL`)=1(red), Sprinkler
+(`SP-BRN`, `SP-CMP`, `SP-DR`, `SPR-HP`, `SPR-LP`)=5(blue), Hose reel (`PIP-HR`,
+`PIP_HRC`, `PIP_HRC-DL`)=3(green), Deluge (`PIP_DF`, `PIP_DF-SPR`)=2(yellow).
+14 `_5_PIP` run-geometry layers were remapped; the 7 `_2_` symbol/equipment
+layers and 3 `_2_TXT-` text layers were left untouched, same as mechanical and
+plumbing. `scratch/apply_fire_print_hierarchy.py` has the full mapping. Not
+verified against an actual plot, same caveat as the mechanical and plumbing
+passes.
