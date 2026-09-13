@@ -1,7 +1,7 @@
 import ezdxf
 
 from fncsqaqc.checks.base import CheckContext
-from fncsqaqc.checks.dwg_equipment_tags import FileTags, _scan_entities, collect, reconcile
+from fncsqaqc.checks.dwg_equipment_tags import FileTags, _normalize, _scan_entities, collect, reconcile
 from fncsqaqc.dxf.reference_scanner import scan
 from fncsqaqc.models import LayerStandard, Severity
 
@@ -115,3 +115,36 @@ def test_schedule_tag_never_placed_in_any_drawing_warns():
     assert any(
         r.severity == Severity.WARN and "AHU-02" in r.message and r.file == "schedule.dwg" for r in results
     )
+
+
+def test_normalize_strips_leading_zeros():
+    assert _normalize("SU-04") == "SU-4"
+    assert _normalize("SU-4") == "SU-4"
+    assert _normalize("EXF-01A") == "EXF-1A"
+    assert _normalize("not a tag") is None
+
+
+def test_leading_zero_only_mismatch_is_informational_not_fail_or_warn():
+    # SU-04 (drawing) and SU-4 (schedule) are the same equipment, just
+    # formatted inconsistently -- real signal worth surfacing, but not a
+    # genuinely missing/extra tag, so matching stays strict while severity
+    # is downgraded.
+    tags_by_file = {
+        "layout.dwg": FileTags(drawing_tags={"SU-04"}),
+        "schedule.dwg": FileTags(schedule_tags={"SU-4"}),
+    }
+    results = reconcile(tags_by_file)
+    assert len(results) == 2
+    assert all(r.severity == Severity.INFO for r in results)
+    assert any(r.file == "layout.dwg" and "SU-04" in r.message and "SU-4" in r.message for r in results)
+    assert any(r.file == "schedule.dwg" and "SU-4" in r.message and "SU-04" in r.message for r in results)
+
+
+def test_genuinely_different_tag_number_still_fails():
+    tags_by_file = {
+        "layout.dwg": FileTags(drawing_tags={"SU-04"}),
+        "schedule.dwg": FileTags(schedule_tags={"SU-9"}),
+    }
+    results = reconcile(tags_by_file)
+    assert any(r.severity == Severity.FAIL and "SU-04" in r.message for r in results)
+    assert any(r.severity == Severity.WARN and "SU-9" in r.message for r in results)

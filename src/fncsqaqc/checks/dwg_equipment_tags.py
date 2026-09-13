@@ -21,6 +21,12 @@ compares each file's tags against the tag/schedule sets from every file in
 the run. Disabled by default (--enable-equipment-tag-check to turn on)
 since there is no strict current standard to validate against with full
 confidence.
+
+Matching stays strict -- 'SU-04' and 'SU-4' are never treated as the same
+tag, so a genuine drafting-standard decision is still needed on which
+convention to use. But when the *only* reason a tag doesn't match is a
+leading-zero difference, that's downgraded to INFO rather than FAIL/WARN:
+it's a real formatting inconsistency worth surfacing, not a missing tag.
 """
 from __future__ import annotations
 
@@ -33,7 +39,7 @@ from fncsqaqc.models import CheckResult, Severity
 CHECK_ID = "equipment_tags"
 CHECK_NAME = "Equipment Tagging / Schedule Cross-check"
 
-TAG_PATTERN = re.compile(r"^[A-Z]{1,6}-\d{1,4}[A-Z]?$")
+TAG_PATTERN = re.compile(r"^([A-Z]{1,6})-(\d{1,4})([A-Z]?)$")
 SCHEDULE_LAYER_HINT = "SCHED"
 
 
@@ -49,6 +55,17 @@ def _candidate_tags(text: str) -> set[str]:
         for token in re.split(r"[\s,;]+", text)
         if TAG_PATTERN.match(token.strip().upper())
     }
+
+
+def _normalize(tag: str) -> str | None:
+    """Collapses leading-zero formatting differences (SU-04 / SU-4) so a
+    mismatch that's purely a numbering-style difference can be reported as
+    informational rather than a real missing/extra tag."""
+    match = TAG_PATTERN.match(tag)
+    if not match:
+        return None
+    prefix, digits, suffix = match.groups()
+    return f"{prefix}-{int(digits)}{suffix}"
 
 
 def _text_of(entity) -> str:
@@ -96,6 +113,15 @@ def collect(ctx: CheckContext) -> FileTags:
     return tags
 
 
+def _by_normalized_form(tags: set[str]) -> dict[str, set[str]]:
+    grouped: dict[str, set[str]] = {}
+    for tag in tags:
+        norm = _normalize(tag)
+        if norm is not None:
+            grouped.setdefault(norm, set()).add(tag)
+    return grouped
+
+
 def reconcile(tags_by_file: dict[str, FileTags]) -> list[CheckResult]:
     all_schedule_tags: set[str] = set()
     all_drawing_tags: set[str] = set()
@@ -103,25 +129,56 @@ def reconcile(tags_by_file: dict[str, FileTags]) -> list[CheckResult]:
         all_schedule_tags |= tags.schedule_tags
         all_drawing_tags |= tags.drawing_tags
 
+    schedule_by_norm = _by_normalized_form(all_schedule_tags)
+    drawing_by_norm = _by_normalized_form(all_drawing_tags)
+
     results: list[CheckResult] = []
     for relative_path, tags in tags_by_file.items():
         for tag in sorted(tags.drawing_tags - all_schedule_tags):
-            results.append(
-                CheckResult(
-                    check_id=CHECK_ID,
-                    severity=Severity.FAIL,
-                    file=relative_path,
-                    message=f"Equipment tag '{tag}' found in drawing but not in the equipment schedule",
+            near = schedule_by_norm.get(_normalize(tag), set())
+            if near:
+                results.append(
+                    CheckResult(
+                        check_id=CHECK_ID,
+                        severity=Severity.INFO,
+                        file=relative_path,
+                        message=(
+                            f"Equipment tag '{tag}' found in drawing but the schedule only has "
+                            f"'{', '.join(sorted(near))}' -- looks like a leading-zero formatting mismatch"
+                        ),
+                    )
                 )
-            )
+            else:
+                results.append(
+                    CheckResult(
+                        check_id=CHECK_ID,
+                        severity=Severity.FAIL,
+                        file=relative_path,
+                        message=f"Equipment tag '{tag}' found in drawing but not in the equipment schedule",
+                    )
+                )
         for tag in sorted(tags.schedule_tags - all_drawing_tags):
-            results.append(
-                CheckResult(
-                    check_id=CHECK_ID,
-                    severity=Severity.WARN,
-                    file=relative_path,
-                    message=f"Equipment tag '{tag}' is in the schedule but not found tagged in any drawing",
+            near = drawing_by_norm.get(_normalize(tag), set())
+            if near:
+                results.append(
+                    CheckResult(
+                        check_id=CHECK_ID,
+                        severity=Severity.INFO,
+                        file=relative_path,
+                        message=(
+                            f"Equipment tag '{tag}' is in the schedule but drawings only have "
+                            f"'{', '.join(sorted(near))}' -- looks like a leading-zero formatting mismatch"
+                        ),
+                    )
                 )
-            )
+            else:
+                results.append(
+                    CheckResult(
+                        check_id=CHECK_ID,
+                        severity=Severity.WARN,
+                        file=relative_path,
+                        message=f"Equipment tag '{tag}' is in the schedule but not found tagged in any drawing",
+                    )
+                )
 
     return results
