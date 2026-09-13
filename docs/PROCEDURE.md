@@ -50,6 +50,17 @@ Templates for all three are in `docs/excel_templates/`. Header matching is
 case-insensitive and trimmed, but a missing/misnamed column fails fast with the
 exact sheet and column name.
 
+**`Deliverables.xlsx` granularity matters:** each row is checked independently —
+its `Expected Pattern` only confirms *some* file matching that glob exists, not
+that every specific item you have in mind is present. If a project has several
+distinct calculations (HVAC load, drainage, water tank sizing, ...), list each
+as its own row with its own pattern; bundling them into one row like
+`Category=Calculations, Item=Calcs, Expected Pattern=calculation/*.pdf` only
+confirms *a* PDF exists in that folder, not that each named calc is actually
+there — the same blind spot §12 found and fixed for `DrawingsList`, except here
+it's a matter of how the input is filled in, not a tool bug (the schema already
+supports one row per item).
+
 ## 6. Procedure
 
 1. Open a terminal in a **working folder that is not the submission folder itself**
