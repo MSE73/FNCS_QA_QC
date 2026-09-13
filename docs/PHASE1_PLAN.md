@@ -91,6 +91,19 @@ inconsistency the equipment-tag check surfaced is resolved as a standard
 (2-digit zero-padded, `docs/PROCEDURE.md` §14) but not yet enforced as a hard
 FAIL — that's a follow-up once drafters know the standard exists.
 
+**2026-09-13, applied to the real master template:** the firm's actual
+AutoCAD template (`MEP - Sharing\CAD Standard\MECHANICAL STANDARD.dwg`, not
+this repo) still had the *old* fire layer colors — the earlier print-hierarchy
+pass only ever updated this repo's `FNCS_CAD_Layers.ods` mirror. Backed up the
+template (`MECHANICAL STANDARD.backup_20260913_235647.dwg`, same folder),
+round-tripped it through ODA (DWG→DXF), updated the 14 `_5_PIP` fire layer
+colors with `ezdxf` to match the decided mapping, converted back (DXF→DWG),
+and verified layer/block/entity counts matched before replacing the original.
+The mechanical/plumbing color passes and the hyphenated/category layer-naming
+decision are **still not applied to this template** — same outstanding item
+as before, now narrower in scope (fire is done, mechanical/plumbing colors
+and the naming-convention update remain).
+
 ## Tech stack
 
 - **Python 3.11+** (3.14.4 already on this machine)
