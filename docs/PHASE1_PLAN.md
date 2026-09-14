@@ -251,6 +251,105 @@ Every loader does case-insensitive/trimmed header matching and raises a specific
 - `revit/handler.py` stub swaps for real logic (pyRevit CLI subprocess call, or a compiled add-in) as a one-file change once Revit automation is worth the investment.
 - Any check can be disabled per run via `--disable-check <id>` for gradual rollout.
 
+### Phase 2 overall scope: the technical/code-compliance audit basket (drafted 2026-09-14)
+
+Drafted after realizing the velocity spec below had been built in isolation
+without ever laying out the rest of Phase 2 as a list — easy to lose the
+forest for the trees across sessions on a project this long-running.
+Restating the intended three-tier structure of the whole tool, since it's
+the frame everything else hangs off:
+
+1. **Drafting cleanliness** — done, shipped (Phase 1): layer names/colors,
+   text style/font/height compliance, purge/unused resources.
+2. **Equipment has schedules** — done, shipped (Phase 1, `equipment_tags`):
+   every tag placed on a drawing cross-referenced against the project's
+   `ACAD_TABLE` schedules.
+3. **Technical audit** — the senior-engineer sign-off review: load calcs,
+   equipment sizing, duct/pipe sizing, manhole sizing, and levels/slopes.
+   This is "Phase 2" and, before this drafting pass, only had one sub-item
+   (velocity) actually spec'd. The rest is scoped below.
+
+**Five sub-checks, scoped individually because they need genuinely
+different mechanisms — this is not one check, it's a basket:**
+
+| # | Sub-check | Mechanism | Code basis status | Built? |
+|---|---|---|---|---|
+| 1 | Duct/pipe velocity | Sizing-summary Excel (flow+size) vs. reference table | Decided (ASHRAE/SMACNA/ASPE/NFPA) | Reference table only |
+| 2 | Drainage slope/levels | Sizing-summary Excel (invert levels+length) vs. min-slope table | Not researched yet, but IPC-style min-slope-by-diameter tables are well-published — low risk | Not started |
+| 3 | Equipment sizing vs. calc | Sizing-summary Excel (calc-required vs. installed capacity), tag-matched | N/A (comparison, not a code table) | Not started |
+| 4 | Manhole sizing | Sizing-summary Excel (manhole dims + connecting pipe sizes) vs. code table | Not researched — lowest confidence of the five | Not started |
+| 5 | Load calc presence/completeness | Text/keyword search over the calc PDF/Excel itself — no drawing side at all | N/A (checklist, not numeric) | Not started |
+
+**Why these five and not others:** this is the breakdown the user gave
+directly (load, equipment sizing, duct/pipe sizing, manholes, levels) —
+not independently re-derived, just decomposed into checkable mechanisms.
+
+**#1 Duct/pipe velocity** — spec'd and reference table built below. Closest
+to done; finish this one first since the sizing-summary Excel it needs is
+mostly shared infrastructure the others can reuse.
+
+**#2 Drainage slope/levels** — a pipe run's slope (invert drop ÷ horizontal
+length) must clear a minimum self-cleansing gradient — same physical
+principle as the 0.6 m/s minimum already in `VelocityLimits.xlsx`'s
+Drainage row, just expressed as slope instead of velocity (IPC-style
+tables publish minimum slope by pipe diameter directly, e.g. commonly
+cited 2% for 4", 1% for 6"+ — not yet verified via research the way the
+velocity table was). Manhole invert *drops* (minimum elevation change
+required across a manhole when pipe size changes) are a related but
+separate code value, also not yet researched. Mechanically this is the
+closest sibling to #1 — same sizing-summary-Excel-vs-reference-table
+shape, could plausibly share one input file and one code-basis table with
+velocity rather than being a fully separate check. Recommended as the
+**second** build target, right after velocity, because the pattern is
+already proven and the code basis looks low-risk to source.
+
+**#3 Equipment sizing vs. calc** — distinct from velocity: this asks "does
+the installed unit meet the calc's required capacity," not "is the flow
+velocity in range." Reuses the tag-matching infrastructure already built
+for `equipment_tags` (same fragility already known: leading-zero drift,
+tags that don't match cleanly between sources — see `docs/PROCEDURE.md`
+§13/§14). No code-basis research needed (it's a direct calc-vs-drawing
+comparison, not a published limit), so this could plausibly be **built
+before** #2/#4 if the user wants a quicker win, at the cost of not
+reusing the slope/velocity code-basis-table pattern.
+
+**#4 Manhole sizing** — lowest confidence: no code basis researched yet,
+and unclear whether manhole dimensions are even captured in a schedule
+today (unlike pumps/tanks, which the `equipment_tags` work confirmed exist
+as `ACAD_TABLE` schedules on this firm's drawings) or only as annotation
+text. **Needs a firm-side check** (does the user have manhole schedules on
+real projects at all?) before this can be spec'd concretely — recommended
+**last** among the four sizing-summary-style checks, pending that answer.
+
+**#5 Load calc presence/completeness** — mechanically unlike the other
+four: no drawing side, no sizing-summary Excel, no numeric comparison. It
+formalizes what was already done manually in `docs/PROCEDURE.md`'s
+follow-up #5 (F12-04-233 calc review) — search the calc PDF/Excel's text
+for expected section headers/content (weather data, zone-level loads,
+system input/output, tank-capacity derivation, pump head+flow) and flag
+what's missing, the same way that manual review found HAP's weather-data
+and system-level reports absent. Does **not** re-derive or verify the load
+numbers themselves (out of scope — would mean independently re-running the
+load calc, unrealistic). Because it needs none of the shared
+sizing-summary infrastructure, this could be built **in parallel** with
+any of #1-#4 rather than strictly sequenced after them.
+
+**Consolidation to decide before building #2-#4:** each of #1-#4 wants a
+per-project "sizing summary" Excel with a similar Tag/Type/System/values
+shape. Worth deciding whether that's one unified workbook (multiple
+sheets: Velocity, Slope, EquipmentSizing, Manholes) that the engineer fills
+in once, or separate files per check — one workbook is almost certainly
+better for the engineer filling it in (one place, not four), but it's a
+CLI/schema decision, not just a content one, worth confirming before #2 is
+built so #1 doesn't need reworking right after.
+
+**Proposed build order:** #1 (finish velocity) → #2 (slope/levels, same
+pattern, code basis needs a quick research pass) → #3 (equipment sizing,
+no code-basis research needed) → #4 (manholes, pending the schedule-format
+check) → #5 (load-calc presence, can slot in anytime, lowest coupling to
+the rest). Each gated by the same F12-04-233 real-project acceptance test
+Phase 1 used, not released to junior engineers individually as each lands.
+
 ### Phase 2 spec: duct/pipe velocity check (drafted 2026-09-14; reference table built 2026-09-14)
 
 **Build status:** the firm-wide velocity-limit reference table described
