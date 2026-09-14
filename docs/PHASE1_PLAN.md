@@ -251,7 +251,12 @@ Every loader does case-insensitive/trimmed header matching and raises a specific
 - `revit/handler.py` stub swaps for real logic (pyRevit CLI subprocess call, or a compiled add-in) as a one-file change once Revit automation is worth the investment.
 - Any check can be disabled per run via `--disable-check <id>` for gradual rollout.
 
-### Phase 2 spec: duct/pipe velocity check (drafted 2026-09-14, not yet built)
+### Phase 2 spec: duct/pipe velocity check (drafted 2026-09-14; reference table built 2026-09-14)
+
+**Build status:** the firm-wide velocity-limit reference table described
+below is built — `docs/excel_templates/VelocityLimits.xlsx`, sourcing
+documented in `docs/PROCEDURE.md` §15. The sizing-summary Excel input and
+the check module itself are still not built (next steps).
 
 Scoped in more detail after this session's manual review of F12-04-233 found
 no velocity verification anywhere in that project's calc package (see

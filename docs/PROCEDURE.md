@@ -336,3 +336,66 @@ reports a pure leading-zero mismatch as INFO (§13), since flipping it to
 FAIL firm-wide before any drafter has been told the standard would just be
 noise. Revisit once drafters are aware of this standard and new/updated
 drawings can reasonably be held to it.
+
+## 15. Built: velocity-limit reference table for Phase 2 (2026-09-14)
+
+First concrete build step for the duct/pipe velocity check spec'd in
+`docs/PHASE1_PLAN.md`'s "Phase 2 spec" section — the check logic and
+per-project sizing-summary input aren't built yet, but the firm-wide
+velocity-limit reference table is, since it can be built and reviewed
+independently of the check code (same reasoning as building
+`FNCS_Layer_Standard.xlsx` before the layer-compliance check existed).
+
+**File:** `docs/excel_templates/VelocityLimits.xlsx`, one `VelocityLimits`
+sheet: `Type (Duct/Pipe) | System | Min Velocity (m/s) | Max Velocity (m/s) |
+Code Basis | Notes | Active (Y/N)`. Same schema conventions as the other
+reference tables — case-insensitive header matching, `Active (Y/N)` to
+disable a row without deleting it.
+
+**Sourcing:** every numeric value was verified via web research this
+session rather than pulled from memory (the NFPA fire limits were already
+confirmed in §14 and are ported over unchanged; duct/domestic-water/steam
+values are newly researched). Where research didn't turn up a solid,
+building-MEP-specific number, the row is left with a blank limit and
+`Active (Y/N) = N` rather than guessing:
+
+- **Duct** (ASHRAE Fundamentals Ch.21 / SMACNA): Supply and Exhaust both
+  default to 8.0 m/s (1600 fpm, commercial main-duct upper bound — Exhaust
+  has no separately-cited general table so it borrows Supply's by analogy),
+  Return 4.0 m/s (800 fpm), Fresh/Outside Air 2.5 m/s (driven by
+  weather-louver face-velocity limits, not the duct itself). "Other"
+  (kitchen exhaust, fume hoods, high-velocity systems) is left inactive —
+  no firm-wide default exists, needs a case-by-case limit.
+- **Domestic water** (ASPE Data Book / IPC): cold water 2.4 m/s (8 ft/s),
+  hot water 1.5 m/s (5 ft/s, lower because erosion-corrosion accelerates
+  with temperature).
+- **Drainage** (IPC Table 704.1): 0.6 m/s (2 ft/s) is a *minimum*
+  self-cleansing velocity achieved via slope — gravity drainage has no
+  upper ceiling in this table. Sewage/sump force mains reuse the same
+  min plus the cold-water max by analogy only (not independently sourced —
+  left inactive).
+- **Fuel gas:** left with no numeric limit, active=N. Building fuel-gas
+  piping (NFPA 54/IFGC) is sized to an allowable pressure-drop fraction,
+  not a velocity ceiling — confirmed this is a different design basis
+  entirely, not just a missing number. (Erosional-velocity formulas like
+  API RP 14E turned up in research but are an oil & gas transmission-line
+  standard, not applicable here — explicitly excluded rather than
+  mistakenly reused.)
+- **Medical gas:** left inactive — no confirmed numeric limit found in
+  NFPA 99 itself; an informally-cited ~6 m/s figure wasn't verifiable
+  against the standard's text.
+- **Steam** (Spirax Sarco / ASHRAE Fundamentals Ch.22): 15 m/s, the
+  low-pressure guideline (medium-pressure can run to ~25 m/s, 40 m/s cited
+  as a practical ceiling at any pressure) — this table has one blended
+  "Steam" row with no pressure-class split yet, so it uses the conservative
+  figure.
+- **Fire** (NFPA, from §14): Standpipe/hydrant 6.1 m/s (NFPA 14, mandatory),
+  fire pump suction 4.6 m/s (NFPA 20). Sprinkler/deluge (NFPA 13, no fixed
+  limit — hydraulic-calc governed) and hose reel (BS EN 671 terminology
+  mismatch, unconfirmed) both left inactive, same as §14 decided.
+
+**Not yet wired into the tool** — no `--velocity-excel` CLI flag, no check
+module, no `CodeCompliance` sheet output yet. Next build step per the Phase
+2 spec: the per-project sizing-summary Excel input and the check module
+itself (`checks/code_compliance_velocity.py`), gated behind a real-project
+acceptance-test run against F12-04-233 before rollout, same as Phase 1.
