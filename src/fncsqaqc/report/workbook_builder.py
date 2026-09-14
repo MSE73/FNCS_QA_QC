@@ -29,6 +29,7 @@ _SHEET_FOR_CHECK = {
     "folder_deliverables": "FolderDeliverables",
     "drawings_list": "DrawingsList",
     "revit_deferred": "Errors",
+    "velocity_check": "CodeCompliance",
 }
 
 _RESULT_COLUMNS = ["Severity", "File", "Message", "Details", "Occurrences"]
@@ -140,13 +141,6 @@ def _write_conversion_log(wb: Workbook, run: RunResult) -> None:
     _autosize(ws, columns)
 
 
-def _write_code_compliance_placeholder(wb: Workbook) -> None:
-    ws = wb.create_sheet("CodeCompliance")
-    ws.cell(row=1, column=1, value="Reserved for Phase 2 (Jordanian/SBC code compliance checks).").font = Font(
-        italic=True
-    )
-
-
 def build(run: RunResult, output_path: Path) -> None:
     wb = Workbook()
     wb.remove(wb.active)  # placeholder default sheet
@@ -165,6 +159,7 @@ def build(run: RunResult, output_path: Path) -> None:
         "EquipmentTags",
         "FolderDeliverables",
         "DrawingsList",
+        "CodeCompliance",
     ]:
         _write_results_sheet(wb, sheet_name, by_sheet.pop(sheet_name, []))
 
@@ -173,7 +168,6 @@ def build(run: RunResult, output_path: Path) -> None:
 
     _write_conversion_log(wb, run)
     _write_results_sheet(wb, "Errors", run.errors)
-    _write_code_compliance_placeholder(wb)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_path)

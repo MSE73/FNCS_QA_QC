@@ -1,10 +1,10 @@
 """Orchestrates a full QA/QC run: discover -> convert -> inspect -> aggregate -> report."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from fncsqaqc.checks import dwg_equipment_tags
+from fncsqaqc.checks import code_compliance_velocity, dwg_equipment_tags
 from fncsqaqc.checks.base import CheckContext
 from fncsqaqc.checks.folder_completeness import check_deliverables, check_drawings
 from fncsqaqc.checks.registry import active_checks
@@ -22,6 +22,8 @@ from fncsqaqc.models import (
     LayerStandard,
     RunResult,
     Severity,
+    SizingRow,
+    VelocityLimit,
 )
 from fncsqaqc.revit.handler import deferred_result
 
@@ -36,6 +38,8 @@ class RunOptions:
     force_reconvert: bool = False
     disabled_check_ids: frozenset[str] = frozenset()
     enable_equipment_tags: bool = False
+    velocity_sizing: list[SizingRow] = field(default_factory=list)
+    velocity_limits: list[VelocityLimit] = field(default_factory=list)
 
 
 def run(options: RunOptions) -> RunResult:
@@ -130,5 +134,7 @@ def run(options: RunOptions) -> RunResult:
     result.extend(check_drawings(options.drawings_list, files, layout_names_by_file))
     if collect_equipment_tags:
         result.extend(dwg_equipment_tags.reconcile(equipment_tags_by_file))
+    if options.velocity_sizing:
+        result.extend(code_compliance_velocity.check(options.velocity_sizing, options.velocity_limits))
 
     return result

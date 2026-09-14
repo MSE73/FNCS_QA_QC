@@ -13,6 +13,8 @@ from fncsqaqc.config import OdaNotFoundError, resolve_config
 from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drawings_list import load_drawings_list
 from fncsqaqc.excelio.layer_list import load_layer_standard
+from fncsqaqc.excelio.sizing_summary import load_velocity_sizing
+from fncsqaqc.excelio.velocity_limits import load_velocity_limits
 from fncsqaqc.models import Severity
 from fncsqaqc.pipeline import RunOptions, run as run_pipeline
 from fncsqaqc.report import console_summary, workbook_builder
@@ -36,6 +38,18 @@ def cli() -> None:
 @click.option("--config", "config_path", type=click.Path(exists=True, dir_okay=False, path_type=Path), default=None)
 @click.option("--no-cache", is_flag=True, default=False, help="Force reconversion of every DWG.")
 @click.option("--enable-equipment-tag-check", is_flag=True, default=False)
+@click.option(
+    "--velocity-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Per-project sizing-summary workbook (Velocity sheet). Requires --velocity-limits-excel.",
+)
+@click.option(
+    "--velocity-limits-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Firm-wide velocity-limit reference table (docs/excel_templates/VelocityLimits.xlsx).",
+)
 @click.option("--disable-check", "disabled_checks", multiple=True, help="Disable a check by id (repeatable).")
 @click.option(
     "--fail-on",
@@ -56,6 +70,8 @@ def check(
     config_path: Path | None,
     no_cache: bool,
     enable_equipment_tag_check: bool,
+    velocity_excel: Path | None,
+    velocity_limits_excel: Path | None,
     disabled_checks: tuple[str, ...],
     fail_on: str,
     verbose: bool,
@@ -73,6 +89,10 @@ def check(
             f"Unknown check id(s): {', '.join(sorted(unknown))}. Valid ids: {', '.join(sorted(_VALID_CHECK_IDS))}",
             param_hint="--disable-check",
         )
+    if velocity_excel and not velocity_limits_excel:
+        raise click.BadParameter(
+            "--velocity-excel requires --velocity-limits-excel", param_hint="--velocity-limits-excel"
+        )
 
     app_config = resolve_config(
         oda_path_flag=str(oda_path) if oda_path else None,
@@ -83,6 +103,8 @@ def check(
     layer_standard = load_layer_standard(layers_excel)
     deliverables = load_deliverables(deliverables_excel)
     drawings_list = load_drawings_list(drawings_excel)
+    velocity_sizing = load_velocity_sizing(velocity_excel) if velocity_excel else []
+    velocity_limits = load_velocity_limits(velocity_limits_excel) if velocity_limits_excel else []
 
     if output is None:
         timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -97,6 +119,8 @@ def check(
         force_reconvert=no_cache,
         disabled_check_ids=frozenset(disabled_checks),
         enable_equipment_tags=enable_equipment_tag_check,
+        velocity_sizing=velocity_sizing,
+        velocity_limits=velocity_limits,
     )
 
     try:

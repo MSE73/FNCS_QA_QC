@@ -4,6 +4,8 @@ from openpyxl import Workbook
 from fncsqaqc.excelio.common import ExcelSchemaError
 from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.layer_list import load_layer_standard
+from fncsqaqc.excelio.sizing_summary import load_velocity_sizing
+from fncsqaqc.excelio.velocity_limits import load_velocity_limits
 
 
 def test_load_layer_standard_valid(tmp_path):
@@ -63,3 +65,49 @@ def test_load_deliverables_valid(tmp_path):
     assert len(items) == 1
     assert items[0].category == "Calcs"
     assert items[0].required is True
+
+
+def test_load_velocity_limits_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "VelocityLimits"
+    ws.append(["Type (Duct/Pipe)", "System", "Min Velocity (m/s)", "Max Velocity (m/s)", "Code Basis", "Active (Y/N)"])
+    ws.append(["Duct", "Supply", None, 8.0, "ASHRAE", "Y"])
+    ws.append(["Pipe", "Fuel Gas", None, None, "NFPA 54", "N"])
+    path = tmp_path / "velocity_limits.xlsx"
+    wb.save(path)
+
+    limits = load_velocity_limits(path)
+    assert len(limits) == 2
+    supply = next(l for l in limits if l.system == "Supply")
+    assert supply.max_velocity == 8.0
+    assert supply.active is True
+    gas = next(l for l in limits if l.system == "Fuel Gas")
+    assert gas.active is False
+
+
+def test_load_velocity_sizing_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Velocity"
+    ws.append(["Tag", "Type (Duct/Pipe)", "System", "Design Flow (L/s)", "Installed Size", "Notes"])
+    ws.append(["SD-01", "Duct", "Supply", 850, "600x300", "Main duct"])
+    path = tmp_path / "sizing_summary.xlsx"
+    wb.save(path)
+
+    rows = load_velocity_sizing(path)
+    assert len(rows) == 1
+    assert rows[0].tag == "SD-01"
+    assert rows[0].design_flow_ls == 850.0
+
+
+def test_load_velocity_sizing_missing_column_raises(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Velocity"
+    ws.append(["Tag", "Type (Duct/Pipe)", "System"])  # missing Design Flow / Installed Size
+    path = tmp_path / "bad_sizing.xlsx"
+    wb.save(path)
+
+    with pytest.raises(ExcelSchemaError):
+        load_velocity_sizing(path)

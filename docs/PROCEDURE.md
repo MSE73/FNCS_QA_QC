@@ -399,3 +399,60 @@ module, no `CodeCompliance` sheet output yet. Next build step per the Phase
 2 spec: the per-project sizing-summary Excel input and the check module
 itself (`checks/code_compliance_velocity.py`), gated behind a real-project
 acceptance-test run against F12-04-233 before rollout, same as Phase 1.
+
+## 16. Built: the velocity check itself (2026-09-14)
+
+Closes out the first item in the Phase 2 sub-check list
+(`docs/PHASE1_PLAN.md`'s "Phase 2 overall scope" section). Two new
+required-together CLI options:
+
+```
+fncsqaqc check "D:\Projects\ProjectX\Submission" ^
+    --layers-excel ... --deliverables-excel ... --drawings-excel ... ^
+    --velocity-excel "D:\Projects\ProjectX\SizingSummary.xlsx" ^
+    --velocity-limits-excel "D:\Standards\VelocityLimits.xlsx"
+```
+
+Both are optional and off by default (the check simply doesn't run if
+`--velocity-excel` isn't passed) — `--velocity-excel` requires
+`--velocity-limits-excel` alongside it.
+
+**`SizingSummary.xlsx`** (`docs/excel_templates/SizingSummary.xlsx`) is the
+per-project input the engineer fills in manually, per the "same for all
+projects" decision — one workbook, growing sheets as each sizing sub-check
+in the Phase 2 scope gets built, not a separate file per check. Only the
+`Velocity` sheet exists so far: `Tag | Type (Duct/Pipe) | System | Design
+Flow (L/s) | Installed Size | Notes`. `Installed Size` is free text parsed
+by shape: ducts as `WxH` in mm (`600x300`), pipes as a bare diameter in mm
+tolerating common prefixes/suffixes (`DN150`, `Ø150`, `150mm`).
+
+**The check** (`checks/code_compliance_velocity.py`, id `velocity_check`)
+matches each sizing row to a `VelocityLimits.xlsx` row by `(Type, System)`
+— case-insensitive/trimmed but otherwise exact, same strict-matching
+philosophy as `equipment_tags` (§13) so a typo'd System name surfaces as
+"no limit defined" rather than silently matching the wrong row. Computes
+velocity = (flow L/s ÷ 1000) ÷ cross-sectional area (m²) and compares
+against the matched limit's min/max:
+
+- No matching `(Type, System)` in `VelocityLimits.xlsx` → WARN (check
+  spelling, or the System needs a new reference-table row).
+- Matching row found but `Active (Y/N) = N` → WARN, echoing that row's
+  Code Basis/Notes so the engineer sees *why* it isn't enforced (e.g. fuel
+  gas is pressure-drop-sized, not velocity-limited) rather than a bare
+  "not defined."
+- Missing/unparseable flow or size → WARN.
+- Computed velocity outside the min/max band → FAIL.
+- Otherwise: silent pass, same convention as every other check.
+
+Writes into the previously-reserved `CodeCompliance` report sheet (the old
+static "Reserved for Phase 2" placeholder is gone now that something
+actually writes there — an empty run shows "No findings." like every other
+sheet). 11 new tests (58 total, all passing): 8 for the check's matching/
+computation/parsing logic, 3 for the two new Excel loaders.
+
+**Not yet done:** the real-project acceptance-test gate against F12-04-233
+(need real design-flow/installed-size data for that project's equipment to
+run it meaningfully — hasn't been assembled yet) before this is considered
+ready to hand to junior engineers, per the rollout process decided in
+follow-up #15/#16 (project memory). The drawing-side stretch goal
+(auto-populating from `ACAD_TABLE` schedules) also remains deferred.

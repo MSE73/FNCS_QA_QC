@@ -350,12 +350,18 @@ check) → #5 (load-calc presence, can slot in anytime, lowest coupling to
 the rest). Each gated by the same F12-04-233 real-project acceptance test
 Phase 1 used, not released to junior engineers individually as each lands.
 
-### Phase 2 spec: duct/pipe velocity check (drafted 2026-09-14; reference table built 2026-09-14)
+### Phase 2 spec: duct/pipe velocity check (drafted 2026-09-14; built 2026-09-14)
 
-**Build status:** the firm-wide velocity-limit reference table described
-below is built — `docs/excel_templates/VelocityLimits.xlsx`, sourcing
-documented in `docs/PROCEDURE.md` §15. The sizing-summary Excel input and
-the check module itself are still not built (next steps).
+**Build status: done**, pending the real-project acceptance-test gate.
+Reference table (`docs/excel_templates/VelocityLimits.xlsx`, sourcing in
+`docs/PROCEDURE.md` §15), sizing-summary input
+(`docs/excel_templates/SizingSummary.xlsx`), and the check module itself
+(`checks/code_compliance_velocity.py`, CLI flags `--velocity-excel` /
+`--velocity-limits-excel`) are all built and tested — see
+`docs/PROCEDURE.md` §16. **Not yet run** against F12-04-233 or any other
+real project (no real design-flow/installed-size data assembled yet) —
+that acceptance test is required before this ships to junior engineers,
+per the rollout process in project memory.
 
 Scoped in more detail after this session's manual review of F12-04-233 found
 no velocity verification anywhere in that project's calc package (see

@@ -141,3 +141,30 @@ class DrawingListItem:
     expected_pattern: str = ""
     required: bool = True
     notes: str = ""
+
+
+@dataclass(frozen=True)
+class VelocityLimit:
+    """One row of the firm-wide velocity-limit reference table
+    (VelocityLimits.xlsx) -- see docs/PROCEDURE.md #15 for sourcing."""
+
+    type: str  # "Duct" or "Pipe"
+    system: str
+    min_velocity: float | None = None
+    max_velocity: float | None = None
+    code_basis: str = ""
+    notes: str = ""
+    active: bool = True
+
+
+@dataclass(frozen=True)
+class SizingRow:
+    """One row of the per-project sizing-summary workbook's Velocity sheet --
+    manual engineer input, see docs/PHASE1_PLAN.md's Phase 2 velocity spec."""
+
+    tag: str
+    type: str  # "Duct" or "Pipe"
+    system: str
+    design_flow_ls: float | None
+    installed_size: str
+    notes: str = ""
