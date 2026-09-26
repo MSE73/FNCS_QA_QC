@@ -274,7 +274,7 @@ different mechanisms — this is not one check, it's a basket:**
 
 | # | Sub-check | Mechanism | Code basis status | Built? |
 |---|---|---|---|---|
-| 1 | Duct/pipe velocity | Sizing-summary Excel (flow+size) vs. reference table | Decided (ASHRAE/SMACNA/ASPE/NFPA) | Reference table only |
+| 1 | Duct/pipe velocity | Sizing-summary Excel (flow+size) vs. reference table | Decided (ASHRAE/SMACNA/ASPE/NFPA) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §17)** |
 | 2 | Drainage slope/levels | Sizing-summary Excel (invert levels+length) vs. min-slope table | Not researched yet, but IPC-style min-slope-by-diameter tables are well-published — low risk | Not started |
 | 3 | Equipment sizing vs. calc | Sizing-summary Excel (calc-required vs. installed capacity), tag-matched | N/A (comparison, not a code table) | Not started |
 | 4 | Manhole sizing | Sizing-summary Excel (manhole dims + connecting pipe sizes) vs. code table | Not researched — lowest confidence of the five | Not started |
@@ -311,7 +311,14 @@ tags that don't match cleanly between sources — see `docs/PROCEDURE.md`
 §13/§14). No code-basis research needed (it's a direct calc-vs-drawing
 comparison, not a published limit), so this could plausibly be **built
 before** #2/#4 if the user wants a quicker win, at the cost of not
-reusing the slope/velocity code-basis-table pattern.
+reusing the slope/velocity code-basis-table pattern. **Real motivating
+example, found while assembling velocity's acceptance-test data (§17):**
+F12-04-233's calc PDF and its `P0801` schedule disagree on flow for the
+same pump tag twice (`SP-02`: 0.06 vs. 0.30 L/s; `IRRP-01`: 0.5 vs. 0.38
+L/s) — exactly the class of mismatch this sub-check exists to catch, and
+neither `equipment_tags` nor `velocity_check` catches it today (velocity
+only compares drawing-side flow against a code limit, never against the
+calc's own number).
 
 **#4 Manhole sizing** — lowest confidence: no code basis researched yet,
 and unclear whether manhole dimensions are even captured in a schedule

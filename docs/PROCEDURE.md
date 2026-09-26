@@ -450,9 +450,62 @@ actually writes there — an empty run shows "No findings." like every other
 sheet). 11 new tests (58 total, all passing): 8 for the check's matching/
 computation/parsing logic, 3 for the two new Excel loaders.
 
-**Not yet done:** the real-project acceptance-test gate against F12-04-233
-(need real design-flow/installed-size data for that project's equipment to
-run it meaningfully — hasn't been assembled yet) before this is considered
-ready to hand to junior engineers, per the rollout process decided in
-follow-up #15/#16 (project memory). The drawing-side stretch goal
-(auto-populating from `ACAD_TABLE` schedules) also remains deferred.
+The drawing-side stretch goal (auto-populating from `ACAD_TABLE` schedules)
+remains deferred.
+
+## 17. Passed: F12-04-233 acceptance-test gate for the velocity check (2026-09-26)
+
+Closes the "not yet done" item from §16 — the rollout gate decided in
+project-memory follow-up #15 (same real-project acceptance test used for
+Phase 1) has now run for velocity.
+
+**Real sizing data was assembled, not typed in from imagination.** Flow
+rates came from the project's own `P0801 SCHEDULE-01.dwg` (PUMPS SCHEDULE,
+SUBMERSIBLE PUMP SCHEDULE, EXHAUST AIR FANS SCHEDULE, SPLIT UNIT HEAT PUMP
+SCHEDULE — read via `ACAD_TABLE.virtual_entities()`, same technique as §13)
+and the calc PDF (`calculation/MR.BASHAR VILLA.pdf`, extracted with `pypdf`).
+Installed sizes came from the nearest size callout to each tagged pump/unit
+on its plan (`P0201 WATER SYSTEM`, `P0101 DRAINGE SYSTEM`, `M0101 HVAC
+SYSTEM` — spatial nearest-neighbour over TEXT/MTEXT insertion points via
+`ezdxf`, reading the cached ODA-converted DXFs already sitting in
+`%LOCALAPPDATA%\fncsqaqc\fncsqaqc\Cache`). Script:
+`scratch/build_sizing_summary_F12-04-233.py` → `scratch/SizingSummary_F12-04-233.xlsx`
+(13 rows, not committed — real-project data, same as other real-project
+scratch artifacts this session).
+
+**Result:** ran clean against real data. 9 of 13 rows pass silently (real,
+well-designed residential ductwork/piping — not a weak test, genuinely
+within limits). The other 4 are legitimate findings, not tool bugs:
+
+- `IRRP-01` (irrigation pump) → WARN, no `VelocityLimits.xlsx` row for
+  System='Irrigation'. Real gap in the reference table, not previously
+  noticed because Phase 1 projects checked so far don't have irrigation
+  piping called out separately.
+- `SMP-01`/`SMP-02` (sump force mains) → WARN, matched
+  Sewage/Sump Force Main row correctly but it's `Active=N` (per §15, never
+  independently sourced) — confirms the inactive-row path works end to end.
+- `SMP-01 gravity inlet` → **FAIL**, velocity 0.02 m/s vs. the 0.6 m/s
+  self-cleansing minimum. Real physics, not a data error: the pit's gravity
+  inlet is sized for peak fixture-unit flow, so it runs far under
+  self-cleansing velocity at typical flow — a known, common real-world
+  plumbing-design tension, and exactly the kind of thing this check exists
+  to surface.
+
+**Bonus finding, out of scope for this check but worth recording:** cross-
+referencing the calc PDF against the P0801 schedule while assembling this
+data surfaced two calc-vs-drawing flow mismatches that neither this check
+nor `equipment_tags` catches today — `SP-02`'s calc sheet says 0.06 L/s
+where the schedule says 0.30 L/s (5x), and `IRRP-01`'s calc sheet says 0.5
+L/s where the schedule says 0.38 L/s. These are exactly what Phase 2
+sub-check #3 ("equipment sizing vs. calc", `docs/PHASE1_PLAN.md`) is scoped
+to catch systematically — noted there as a real motivating example rather
+than fixed here.
+
+Full run against the real folder (with `--velocity-excel`/
+`--velocity-limits-excel`, without `--enable-equipment-tag-check`): 250
+FAIL / 919 WARN / 0 INFO, vs. the 249 FAIL / 916 WARN / 0 INFO baseline from
+project-memory follow-up #11 — the entire delta (+1 FAIL, +3 WARN) is
+exactly the four velocity findings above, confirming no regression in any
+other check.
+
+**Velocity check (Phase 2 sub-check #1) is now rollout-ready.**
