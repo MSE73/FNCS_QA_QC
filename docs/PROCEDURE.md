@@ -604,3 +604,77 @@ way §17 was. Real F12-04-233 acceptance-testing for slope needs either a
 confirmed length source (a labeled run length on the drawing, or a
 verified drawing scale) or the user confirming the file's real-world unit
 directly — follow-up item, not done here.
+
+## 19. Built and passed: equipment sizing vs. calc, sub-check #3 (2026-09-26)
+
+Third item in the Phase 2 sub-check list (`docs/PHASE1_PLAN.md`'s "Phase 2
+overall scope" section). Structurally the simplest of the three built so
+far: "does the installed/selected unit meet the calc's required value,"
+a direct calc-vs-drawing comparison rather than a check against a published
+code limit — so unlike velocity (§16) and slope (§18) there is **no
+firm-wide reference table**, just one manually-filled sizing-summary sheet.
+
+**`SizingSummary.xlsx`** gained an `EquipmentSizing` sheet: `Tag | Parameter
+| Required (Calc) | Installed (Drawing) | Unit | Tolerance (%) | Notes`.
+`Parameter` is free text naming what's being compared (`Flow (L/s)`,
+`Capacity (kW)`, `Storage Capacity (L)`, ...) since equipment types vary too
+widely for a fixed column set. `Tolerance (%)` is optional, defaulting to
+0 (strict) — same tolerance-column pattern already used for text-style
+height checking (`TextStyleRule.height_tolerance_pct`, Phase 1), added here
+because real rounding on a schedule (a raw calculated 0.430004778 L/s
+selection rounds to 0.43 on the drawing) would otherwise register as a
+hairline false-positive undersizing.
+
+**The check** (`checks/code_compliance_equipment_sizing.py`, id
+`equipment_sizing_check`) computes `threshold = required * (1 -
+tolerance/100)` and:
+
+- Missing/unparseable Required or Installed value → WARN (two separate
+  messages, so it's obvious which side of the comparison is broken).
+- `installed < threshold` → **FAIL**, "undersized vs. required," with both
+  values and the unit in the message; the tolerance is echoed too when
+  non-zero so the FAIL is self-explanatory without opening the workbook.
+- Otherwise: silent pass — including when installed exceeds required by any
+  margin. This check only catches *undersizing*; it has no opinion on
+  wasteful oversizing (out of scope, not asked for) and no opinion on
+  "installed doesn't match the calc's number even though it happens to be
+  bigger" (see the SP-02 real-data note below — a real gap, not a bug).
+
+Writes into the shared `CodeCompliance` sheet alongside velocity and slope.
+No CLI flag pairing needed (`--equipment-sizing-excel` alone, unlike the
+"excel + limits-excel" pattern for the other two, precisely because there's
+no reference table). 9 new tests (79 total, all passing): 7 for the check's
+comparison/tolerance/missing-value logic, 2 for the new Excel loader.
+
+**Passed a real F12-04-233 acceptance test — no drawing-scale ambiguity
+this time**, unlike slope (§18): every value here came straight from text
+(the calc PDF via `pypdf`, the `P0801` schedules via `ACAD_TABLE`
+`virtual_entities()`), not measured drawing geometry, so there was nothing
+to calibrate. `scratch/build_equipment_sizing_F12-04-233.py` →
+`scratch/EquipmentSizing_F12-04-233.xlsx` (8 rows, not committed — real-
+project data, same convention as §17/§18's scratch artifacts). Result:
+
+- **1 real FAIL**: `IRRP-01` Flow — calc p.12 requires 0.5 L/s, the P0801
+  PUMPS SCHEDULE shows only 0.38 L/s installed. A genuine undersized
+  selection against the project's own calc, not a tool artifact.
+- **7 pass**, three worth calling out specifically: `SP-02` Flow (calc 0.06
+  L/s vs. schedule 0.30 L/s — passes here since installed exceeds required,
+  even though the 5x gap is the same real discrepancy flagged back in §17;
+  this check's blind spot for "bigger than required but doesn't actually
+  match" is exactly why that finding is recorded there, not fixed by this
+  row passing); `HWP-01` Flow (raw calc value 0.430004778 L/s vs. schedule's
+  rounded 0.43 — fails with zero tolerance, passes cleanly with the 1%
+  tolerance this row uses, a real justification for that column rather than
+  a hypothetical one); `WT-01` Storage Capacity (calc's "4 m3" input vs. the
+  `WATER TANK SCHEDULE`'s 2x2000L = 4000L — the same cross-reference
+  project-memory follow-up #5 made by hand months before this check
+  existed, now expressible as one workbook row).
+
+Full run (`--equipment-sizing-excel` only, no other Phase-2 flags): 250
+FAIL / 916 WARN / 0 INFO vs. the 249/916/0 baseline — the entire delta
+(+1 FAIL) is the `IRRP-01` finding above, confirming no regression.
+
+**Equipment-sizing-vs-calc check (Phase 2 sub-check #3) is rollout-ready.**
+Three of five Phase 2 sub-checks now built; #1 and #3 have passed real
+acceptance tests, #2 is built/tested but its acceptance test is blocked on
+confirming a drawing's real-world scale (§18).

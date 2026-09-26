@@ -14,7 +14,7 @@ from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.drawings_list import load_drawings_list
 from fncsqaqc.excelio.layer_list import load_layer_standard
-from fncsqaqc.excelio.sizing_summary import load_slope_sizing, load_velocity_sizing
+from fncsqaqc.excelio.sizing_summary import load_equipment_sizing, load_slope_sizing, load_velocity_sizing
 from fncsqaqc.excelio.velocity_limits import load_velocity_limits
 from fncsqaqc.models import Severity
 from fncsqaqc.pipeline import RunOptions, run as run_pipeline
@@ -63,6 +63,13 @@ def cli() -> None:
     default=None,
     help="Firm-wide drainage minimum-slope reference table (docs/excel_templates/DrainageSlopeLimits.xlsx).",
 )
+@click.option(
+    "--equipment-sizing-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Per-project sizing-summary workbook (EquipmentSizing sheet). No reference table needed -- "
+    "direct calc-vs-drawing comparison.",
+)
 @click.option("--disable-check", "disabled_checks", multiple=True, help="Disable a check by id (repeatable).")
 @click.option(
     "--fail-on",
@@ -87,6 +94,7 @@ def check(
     velocity_limits_excel: Path | None,
     slope_excel: Path | None,
     slope_limits_excel: Path | None,
+    equipment_sizing_excel: Path | None,
     disabled_checks: tuple[str, ...],
     fail_on: str,
     verbose: bool,
@@ -126,6 +134,7 @@ def check(
     velocity_limits = load_velocity_limits(velocity_limits_excel) if velocity_limits_excel else []
     slope_sizing = load_slope_sizing(slope_excel) if slope_excel else []
     slope_limits = load_drainage_slope_limits(slope_limits_excel) if slope_limits_excel else []
+    equipment_sizing = load_equipment_sizing(equipment_sizing_excel) if equipment_sizing_excel else []
 
     if output is None:
         timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -144,6 +153,7 @@ def check(
         velocity_limits=velocity_limits,
         slope_sizing=slope_sizing,
         slope_limits=slope_limits,
+        equipment_sizing=equipment_sizing,
     )
 
     try:

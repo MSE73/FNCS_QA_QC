@@ -5,7 +5,7 @@ from fncsqaqc.excelio.common import ExcelSchemaError
 from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.layer_list import load_layer_standard
-from fncsqaqc.excelio.sizing_summary import load_slope_sizing, load_velocity_sizing
+from fncsqaqc.excelio.sizing_summary import load_equipment_sizing, load_slope_sizing, load_velocity_sizing
 from fncsqaqc.excelio.velocity_limits import load_velocity_limits
 
 
@@ -160,3 +160,32 @@ def test_load_slope_sizing_missing_column_raises(tmp_path):
 
     with pytest.raises(ExcelSchemaError):
         load_slope_sizing(path)
+
+
+def test_load_equipment_sizing_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "EquipmentSizing"
+    ws.append(["Tag", "Parameter", "Required (Calc)", "Installed (Drawing)", "Unit", "Tolerance (%)", "Notes"])
+    ws.append(["SP-02", "Flow (L/s)", 0.06, 0.30, "L/s", None, "Sample"])
+    path = tmp_path / "sizing_summary.xlsx"
+    wb.save(path)
+
+    rows = load_equipment_sizing(path)
+    assert len(rows) == 1
+    assert rows[0].tag == "SP-02"
+    assert rows[0].required_value == 0.06
+    assert rows[0].installed_value == 0.30
+    assert rows[0].tolerance_pct == 0.0  # blank -> defaults to 0, not None
+
+
+def test_load_equipment_sizing_missing_column_raises(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "EquipmentSizing"
+    ws.append(["Tag", "Parameter"])  # missing Required/Installed
+    path = tmp_path / "bad_equipment_sizing.xlsx"
+    wb.save(path)
+
+    with pytest.raises(ExcelSchemaError):
+        load_equipment_sizing(path)

@@ -198,3 +198,21 @@ class SlopeRow:
     downstream_invert_m: float | None
     length_m: float | None
     notes: str = ""
+
+
+@dataclass(frozen=True)
+class EquipmentSizingRow:
+    """One row of the per-project sizing-summary workbook's EquipmentSizing
+    sheet -- manual comparison of a calc's required value against what's
+    actually installed/selected, tag-matched. Unlike velocity/slope there is
+    no firm-wide reference table: this is a direct calc-vs-drawing
+    comparison, not a check against a published code limit. See
+    docs/PHASE1_PLAN.md's Phase 2 overall scope, sub-check #3."""
+
+    tag: str
+    parameter: str  # e.g. "Flow (L/s)", "Head (m)", "Capacity (kW)"
+    required_value: float | None
+    installed_value: float | None
+    unit: str = ""
+    tolerance_pct: float = 0.0
+    notes: str = ""
