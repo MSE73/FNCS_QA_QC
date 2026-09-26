@@ -3,8 +3,9 @@ from openpyxl import Workbook
 
 from fncsqaqc.excelio.common import ExcelSchemaError
 from fncsqaqc.excelio.deliverables_list import load_deliverables
+from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.layer_list import load_layer_standard
-from fncsqaqc.excelio.sizing_summary import load_velocity_sizing
+from fncsqaqc.excelio.sizing_summary import load_slope_sizing, load_velocity_sizing
 from fncsqaqc.excelio.velocity_limits import load_velocity_limits
 
 
@@ -111,3 +112,51 @@ def test_load_velocity_sizing_missing_column_raises(tmp_path):
 
     with pytest.raises(ExcelSchemaError):
         load_velocity_sizing(path)
+
+
+def test_load_drainage_slope_limits_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "DrainageSlopeLimits"
+    ws.append(["Min Diameter (mm)", "Max Diameter (mm)", "Min Slope (%)", "Code Basis", "Active (Y/N)"])
+    ws.append([0, 65, 2.08, "IPC Table 704.1", "Y"])
+    ws.append([151, None, 0.52, "IPC Table 704.1", "N"])
+    path = tmp_path / "slope_limits.xlsx"
+    wb.save(path)
+
+    limits = load_drainage_slope_limits(path)
+    assert len(limits) == 2
+    small = next(l for l in limits if l.min_diameter_mm == 0)
+    assert small.max_diameter_mm == 65
+    assert small.active is True
+    large = next(l for l in limits if l.min_diameter_mm == 151)
+    assert large.max_diameter_mm is None
+    assert large.active is False
+
+
+def test_load_slope_sizing_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Slope"
+    ws.append(["Tag", "Installed Size", "Upstream Invert (m)", "Downstream Invert (m)", "Run Length (m)", "Notes"])
+    ws.append(["MH-01 to MH-02", "150mm", 981.50, 980.95, 30, "Sample"])
+    path = tmp_path / "sizing_summary.xlsx"
+    wb.save(path)
+
+    rows = load_slope_sizing(path)
+    assert len(rows) == 1
+    assert rows[0].tag == "MH-01 to MH-02"
+    assert rows[0].upstream_invert_m == 981.50
+    assert rows[0].length_m == 30.0
+
+
+def test_load_slope_sizing_missing_column_raises(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Slope"
+    ws.append(["Tag", "Installed Size"])  # missing invert/length columns
+    path = tmp_path / "bad_slope.xlsx"
+    wb.save(path)
+
+    with pytest.raises(ExcelSchemaError):
+        load_slope_sizing(path)

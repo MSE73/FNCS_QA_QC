@@ -509,3 +509,98 @@ exactly the four velocity findings above, confirming no regression in any
 other check.
 
 **Velocity check (Phase 2 sub-check #1) is now rollout-ready.**
+
+## 18. Built: the drainage minimum-slope check, sub-check #2 (2026-09-26)
+
+Second item in the Phase 2 sub-check list (`docs/PHASE1_PLAN.md`'s "Phase 2
+overall scope" section) — same mechanism and philosophy as `velocity_check`
+(§16), just measuring installed *slope* (invert drop ÷ run length) against
+a code-mandated minimum grade instead of computing velocity via Manning's
+equation.
+
+**Code basis: IPC Table 704.1**, same source already cited for the
+Drainage(gravity) row's minimum *velocity* in `VelocityLimits.xlsx` (§15) —
+minimum grade and minimum self-cleansing velocity are two expressions of
+the same physical requirement, and 704.1 is literally the slope table that
+requirement traces back to. Verified via web search this session (not
+recalled from memory): three diameter tiers, minimum fall expressed in
+in/ft in the code text, converted here to a %-grade to match this tool's
+metric-everywhere convention:
+
+| Nominal size | mm range used here | Min slope | Source text |
+|---|---|---|---|
+| <=2 1/2" | 0-65mm (DN65 and under) | 2.08% | 1/4 in/ft |
+| 3"-6" | 66-150mm (DN80-DN150) | 1.04% | 1/8 in/ft |
+| >=8" | 151mm+ (DN200 and up) | 0.52% | 1/16 in/ft |
+
+The 65/66 and 150/151 breakpoints are chosen in whole mm to land in the gap
+between real nominal pipe steps (65->80mm, 150->200mm), so no real pipe
+size can ever land ambiguously on a boundary. No max-slope ceiling is
+published in this table — IPC 704.1 governs minimum grade only (§17's
+Drainage(gravity) velocity row has the same "min only" shape) — noted in
+the reference table so nobody mistakes the omission for an oversight.
+
+**`DrainageSlopeLimits.xlsx`** (`docs/excel_templates/DrainageSlopeLimits.xlsx`)
+is the new firm-wide reference table, structured like `VelocityLimits.xlsx`:
+`Min Diameter (mm) | Max Diameter (mm) | Min Slope (%) | Code Basis | Notes
+| Active (Y/N)`. Unlike velocity's exact `(Type, System)` key, this is a
+*range* lookup by diameter alone — minimum grade under 704.1 doesn't depend
+on which system the pipe serves.
+
+**`SizingSummary.xlsx`** gained a new `Slope` sheet (per the "one workbook,
+growing sheets" decision in follow-up #17/§16): `Tag | Installed Size |
+Upstream Invert (m) | Downstream Invert (m) | Run Length (m) | Notes` — one
+row per gravity pipe run between two points with known invert levels (e.g.
+manhole to manhole), which is exactly the data this firm's own manhole
+schedules already carry (confirmed in §17's `P0801 SCHEDULE` read: `I.L.
+(m)` per manhole).
+
+**The check** (`checks/code_compliance_slope.py`, id `slope_check`)
+computes `drop = upstream_invert - downstream_invert`, `slope% = drop /
+length * 100`, and:
+
+- Unparseable Installed Size, or a missing invert/length → WARN.
+- Run length <= 0 → WARN (can't compute a slope from zero or negative
+  length).
+- `downstream_invert > upstream_invert` (the pipe runs uphill) → **FAIL**,
+  its own distinct message rather than the ordinary "below minimum" wording
+  — this is a more clear-cut error than a shallow-but-positive grade.
+- No diameter range in `DrainageSlopeLimits.xlsx` covers the pipe's
+  diameter, matching row `Active=N`, or computed slope below the matched
+  minimum → same WARN/WARN/FAIL shape as `velocity_check`.
+- Otherwise: silent pass.
+
+Pipe-diameter parsing (`DN150`/`Ø150`/`150mm`) was pulled out of
+`code_compliance_velocity.py` into a shared `checks/sizing_parsing.py`
+(`parse_pipe_diameter_mm`) rather than duplicated, since this is the second
+consumer of the exact same free-text parsing rule — `velocity_check`'s pipe
+branch now calls it too, no behavior change there (12 of its existing tests
+still cover that path).
+
+Writes into the shared `CodeCompliance` report sheet alongside
+`velocity_check` (both are the same "technical audit" tier, sharing one
+sheet reads more naturally than splitting it further). 12 new tests (70
+total, all passing): 8 for the check's matching/computation/parsing logic
+(mirroring `velocity_check`'s test shape), 4 for the two new Excel loaders.
+Wired into the CLI as `--slope-excel`/`--slope-limits-excel` (same
+required-together pattern as velocity, off by default).
+
+**Smoke-tested, not yet acceptance-tested.** The template's own sample row
+(`MH-01 to MH-02`, 150mm, 1.83% computed vs. 1.04% minimum) passes cleanly
+end-to-end through a real CLI run against F12-04-233. A further attempt to
+run *real* F12-04-233 manhole data (from the same `P0801 SEWAGE MANHOLES
+SCHEDULE` invert levels used in §17: MH-01 IL=981.50, MH-02 IL=980.95,
+MH-03 IL=980.28, drain outlet dia 150mm for all three) hit a real
+limitation: invert levels are on the schedule, but pipe run *length*
+between manholes isn't labeled anywhere on `P0101 DRAINGE SYSTEM`, so it'd
+have to come from measuring manhole symbol positions in the DXF — and this
+file has no dimension entities, `$INSUNITS=0` (unitless), and no other
+confirmed-scale reference to calibrate raw coordinate distance against.
+Measuring MH-01->MH-02 and MH-02->MH-03 as raw coordinate distances and
+*assuming* those units are meters gives plausible-looking villa-scale runs
+(6.5m and 17.3m) that both pass comfortably — but that assumption is
+unverified, so this is **not** being logged as a passed acceptance test the
+way §17 was. Real F12-04-233 acceptance-testing for slope needs either a
+confirmed length source (a labeled run length on the drawing, or a
+verified drawing scale) or the user confirming the file's real-world unit
+directly — follow-up item, not done here.

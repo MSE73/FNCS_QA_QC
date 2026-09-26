@@ -11,9 +11,10 @@ import click
 from fncsqaqc.checks.registry import CHECKS
 from fncsqaqc.config import OdaNotFoundError, resolve_config
 from fncsqaqc.excelio.deliverables_list import load_deliverables
+from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.drawings_list import load_drawings_list
 from fncsqaqc.excelio.layer_list import load_layer_standard
-from fncsqaqc.excelio.sizing_summary import load_velocity_sizing
+from fncsqaqc.excelio.sizing_summary import load_slope_sizing, load_velocity_sizing
 from fncsqaqc.excelio.velocity_limits import load_velocity_limits
 from fncsqaqc.models import Severity
 from fncsqaqc.pipeline import RunOptions, run as run_pipeline
@@ -50,6 +51,18 @@ def cli() -> None:
     default=None,
     help="Firm-wide velocity-limit reference table (docs/excel_templates/VelocityLimits.xlsx).",
 )
+@click.option(
+    "--slope-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Per-project sizing-summary workbook (Slope sheet). Requires --slope-limits-excel.",
+)
+@click.option(
+    "--slope-limits-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Firm-wide drainage minimum-slope reference table (docs/excel_templates/DrainageSlopeLimits.xlsx).",
+)
 @click.option("--disable-check", "disabled_checks", multiple=True, help="Disable a check by id (repeatable).")
 @click.option(
     "--fail-on",
@@ -72,6 +85,8 @@ def check(
     enable_equipment_tag_check: bool,
     velocity_excel: Path | None,
     velocity_limits_excel: Path | None,
+    slope_excel: Path | None,
+    slope_limits_excel: Path | None,
     disabled_checks: tuple[str, ...],
     fail_on: str,
     verbose: bool,
@@ -93,6 +108,10 @@ def check(
         raise click.BadParameter(
             "--velocity-excel requires --velocity-limits-excel", param_hint="--velocity-limits-excel"
         )
+    if slope_excel and not slope_limits_excel:
+        raise click.BadParameter(
+            "--slope-excel requires --slope-limits-excel", param_hint="--slope-limits-excel"
+        )
 
     app_config = resolve_config(
         oda_path_flag=str(oda_path) if oda_path else None,
@@ -105,6 +124,8 @@ def check(
     drawings_list = load_drawings_list(drawings_excel)
     velocity_sizing = load_velocity_sizing(velocity_excel) if velocity_excel else []
     velocity_limits = load_velocity_limits(velocity_limits_excel) if velocity_limits_excel else []
+    slope_sizing = load_slope_sizing(slope_excel) if slope_excel else []
+    slope_limits = load_drainage_slope_limits(slope_limits_excel) if slope_limits_excel else []
 
     if output is None:
         timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -121,6 +142,8 @@ def check(
         enable_equipment_tags=enable_equipment_tag_check,
         velocity_sizing=velocity_sizing,
         velocity_limits=velocity_limits,
+        slope_sizing=slope_sizing,
+        slope_limits=slope_limits,
     )
 
     try:

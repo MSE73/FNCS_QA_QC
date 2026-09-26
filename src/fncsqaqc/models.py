@@ -168,3 +168,33 @@ class SizingRow:
     design_flow_ls: float | None
     installed_size: str
     notes: str = ""
+
+
+@dataclass(frozen=True)
+class SlopeLimit:
+    """One row of the firm-wide drainage minimum-slope reference table
+    (DrainageSlopeLimits.xlsx) -- see docs/PROCEDURE.md #18 for sourcing.
+    A range lookup by pipe diameter (mm), not an exact-match key like
+    VelocityLimit -- gravity drainage's minimum grade depends only on pipe
+    diameter, not on which system it serves."""
+
+    min_diameter_mm: float
+    max_diameter_mm: float | None  # None = open-ended (largest tier)
+    min_slope_pct: float
+    code_basis: str = ""
+    notes: str = ""
+    active: bool = True
+
+
+@dataclass(frozen=True)
+class SlopeRow:
+    """One row of the per-project sizing-summary workbook's Slope sheet --
+    manual engineer input, one row per gravity-drainage pipe run between two
+    points with known invert levels (e.g. manhole to manhole)."""
+
+    tag: str
+    installed_size: str
+    upstream_invert_m: float | None
+    downstream_invert_m: float | None
+    length_m: float | None
+    notes: str = ""

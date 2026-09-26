@@ -1,13 +1,13 @@
-"""Loads the per-project sizing-summary workbook. Only the Velocity sheet
-exists so far -- Slope, EquipmentSizing, and Manholes sheets get added to
-this same file as their checks are built (docs/PHASE1_PLAN.md's "Phase 2
-overall scope" section)."""
+"""Loads the per-project sizing-summary workbook. Velocity and Slope sheets
+exist so far -- EquipmentSizing and Manholes sheets get added to this same
+file as their checks are built (docs/PHASE1_PLAN.md's "Phase 2 overall
+scope" section)."""
 from __future__ import annotations
 
 from pathlib import Path
 
 from fncsqaqc.excelio.common import as_float, as_str, read_rows
-from fncsqaqc.models import SizingRow
+from fncsqaqc.models import SizingRow, SlopeRow
 
 
 def load_velocity_sizing(workbook_path: Path) -> list[SizingRow]:
@@ -24,6 +24,33 @@ def load_velocity_sizing(workbook_path: Path) -> list[SizingRow]:
             system=as_str(row["System"]),
             design_flow_ls=as_float(row.get("Design Flow (L/s)")),
             installed_size=as_str(row.get("Installed Size")),
+            notes=as_str(row.get("Notes")),
+        )
+        for row in rows
+        if as_str(row["Tag"])
+    ]
+
+
+def load_slope_sizing(workbook_path: Path) -> list[SlopeRow]:
+    rows = read_rows(
+        workbook_path,
+        "Slope",
+        required_columns=[
+            "Tag",
+            "Installed Size",
+            "Upstream Invert (m)",
+            "Downstream Invert (m)",
+            "Run Length (m)",
+        ],
+        optional_columns=["Notes"],
+    )
+    return [
+        SlopeRow(
+            tag=as_str(row["Tag"]),
+            installed_size=as_str(row.get("Installed Size")),
+            upstream_invert_m=as_float(row.get("Upstream Invert (m)")),
+            downstream_invert_m=as_float(row.get("Downstream Invert (m)")),
+            length_m=as_float(row.get("Run Length (m)")),
             notes=as_str(row.get("Notes")),
         )
         for row in rows

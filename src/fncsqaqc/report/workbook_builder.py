@@ -30,6 +30,7 @@ _SHEET_FOR_CHECK = {
     "drawings_list": "DrawingsList",
     "revit_deferred": "Errors",
     "velocity_check": "CodeCompliance",
+    "slope_check": "CodeCompliance",
 }
 
 _RESULT_COLUMNS = ["Severity", "File", "Message", "Details", "Occurrences"]

@@ -275,7 +275,7 @@ different mechanisms — this is not one check, it's a basket:**
 | # | Sub-check | Mechanism | Code basis status | Built? |
 |---|---|---|---|---|
 | 1 | Duct/pipe velocity | Sizing-summary Excel (flow+size) vs. reference table | Decided (ASHRAE/SMACNA/ASPE/NFPA) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §17)** |
-| 2 | Drainage slope/levels | Sizing-summary Excel (invert levels+length) vs. min-slope table | Not researched yet, but IPC-style min-slope-by-diameter tables are well-published — low risk | Not started |
+| 2 | Drainage slope/levels | Sizing-summary Excel (invert levels+length) vs. min-slope table | Decided (IPC Table 704.1) | **Built, smoke-tested — real acceptance test blocked on drawing-scale confirmation (`docs/PROCEDURE.md` §18)** |
 | 3 | Equipment sizing vs. calc | Sizing-summary Excel (calc-required vs. installed capacity), tag-matched | N/A (comparison, not a code table) | Not started |
 | 4 | Manhole sizing | Sizing-summary Excel (manhole dims + connecting pipe sizes) vs. code table | Not researched — lowest confidence of the five | Not started |
 | 5 | Load calc presence/completeness | Text/keyword search over the calc PDF/Excel itself — no drawing side at all | N/A (checklist, not numeric) | Not started |
