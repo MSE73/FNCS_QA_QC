@@ -807,6 +807,93 @@ contributed zero new findings, confirming no regression and a
 realistic clean pass for a genuinely adequately-sized real project.
 **Manhole check (Phase 2 sub-check #4) is now rollout-ready.**
 
-**Phase 2 status: 4 of 5 sub-checks built, all 4 have passed real
-F12-04-233 acceptance tests.** Only sub-check #5 (load-calc
-presence/completeness) remains.
+## 21. Built and passed: load-calc presence/completeness, sub-check #5 (2026-09-27)
+
+Fifth and final item in the Phase 2 sub-check list (`docs/PHASE1_PLAN.md`'s
+"Phase 2 overall scope" section). Mechanically unlike #1-#4: no drawing
+side, no sizing-summary Excel, no numeric comparison, no firm-wide
+code-basis research (no code governs "did the engineer attach a weather
+data report" the way IPC governs slope). It formalizes what an earlier
+session already did **by hand**: a manual page-by-page read of
+F12-04-233's real calc PDF against a checklist (the review note that
+resulted, `scratch/calc_review_note_F12-04-233.md`, found a real HAP
+report missing 3 of its sections and a tank-capacity figure with no
+sizing derivation shown) — this sub-check turns that one-off manual
+review into a repeatable keyword-presence scan.
+
+**New `fncsqaqc.calcdoc.extract` module** (`extract_text(path)`): dispatches
+on file extension, since this firm's calc sources are an unstandardized
+mix of PDF (typically a Carrier HAP export) and Excel (manual pump/tank
+duty calcs) — `.pdf` via `pypdf` (`PdfReader`, concatenating
+`page.extract_text()` across every page), `.xlsx`/`.xlsm` via `openpyxl`
+(concatenating every non-empty cell's string value across every sheet).
+Added `pypdf` as a real dependency (`pyproject.toml`) — earlier sessions
+only used it in one-off `scratch/` scripts for manually-typed acceptance
+data, but this check's whole purpose is reading a calc document's text at
+run time, so it's shipped code now, not a scratch tool.
+
+**`LoadCalcChecklist.xlsx`** (`docs/excel_templates/LoadCalcChecklist.xlsx`)
+is the new firm-wide reference table: `Category | Item | Keywords |
+Required (Y/N) | Notes | Active (Y/N)`. `Keywords` is `|`-separated
+alternatives — any one substring match (case-insensitive) counts as
+present, since real documents phrase the same section differently (a
+"DOAS Sizing Summary" item first shipped with keyword `"DOAS Sizing
+Summary"`, which failed to match the real PDF's actual text, "Dedicated
+Outdoor Air System **(DOAS) Sizing Summary**" — the parenthesis breaks a
+literal-phrase substring match. Fixed by widening the keyword to `"DOAS|
+Dedicated Outdoor Air System"`, caught by re-running the acceptance test
+below, not by inspection). Nine rows total, built directly from the real
+manual review: the four items it found genuinely missing (Design Weather
+Data, System Input Data, System Output Data/Design Load Summary, Water
+Tank Capacity Derivation) plus the five it confirmed present (Zone/DOAS/
+Ventilation Sizing Summary, Pump Duty Calc, Sump Pit Sizing) — all marked
+`Required=Y`, since a complete calc package should include all of them;
+which ones a given project is missing is exactly what the check surfaces.
+
+**The check** (`checks/code_compliance_load_calc.py`, id `load_calc_check`)
+takes the extracted calc text plus the checklist and, for each active
+item, does a case-insensitive substring search for any of its `|`-
+separated keywords: found -> silent pass; not found and `Required=Y` ->
+**FAIL**; not found and `Required=N` -> WARN (same required->FAIL/
+optional->WARN shape as `checks/folder_completeness.py`'s deliverables/
+drawings checks). Does **not** attempt to verify a found section's
+numbers are correct — presence/absence only, exactly as scoped.
+
+Wired into the CLI as `--calc-file`/`--calc-checklist-excel` (same
+required-together pattern as velocity/slope/manhole; `--calc-file` accepts
+`.pdf` or `.xlsx`/`.xlsm`, raising a clear `BadParameter` on any other
+extension). Writes into the shared `CodeCompliance` sheet.
+
+**Real bug caught while building this:** `manhole_check` (§20) and this
+check were both missing from `report/workbook_builder.py`'s
+`_SHEET_FOR_CHECK` routing map — findings from an unmapped check_id don't
+error, they silently land on the catch-all "Other" sheet instead of
+`CodeCompliance`. Manhole's own acceptance test produced zero findings so
+this went unnoticed at the time; it surfaced here because this check's
+first real run *did* produce findings, and they weren't where expected.
+Fixed both entries in the same commit, and added
+`tests/test_report_workbook_builder.py` asserting every Phase 2 check's
+`CHECK_ID` has a sheet mapping, so a sixth future check can't repeat this
+silently. 105 total tests passing (11 new: 6 for the check's matching
+logic, 2 for the new Excel loader, 2 for `calcdoc.extract`, 1 for the
+sheet-routing regression guard).
+
+**Passed a real F12-04-233 acceptance test, reproducing the manual review
+exactly.** Ran `--calc-file` directly against the real
+`calculation\MR.BASHAR VILLA.pdf` (no scratch data-assembly script needed
+this time — the check reads the real document itself, there's nothing to
+manually transcribe into an Excel row). Result: **4 FAIL**, matching the
+manual review's four real findings precisely (Design Weather Data, System
+Input Data, System Output Data/Design Load Summary, Tank Capacity
+Derivation) — and correctly silent on the five items the manual review
+confirmed present, once the DOAS keyword was widened. Full CLI run
+(velocity + slope + manhole + load-calc, no equipment-tag check): **254
+FAIL / 919 WARN / 0 INFO**, exactly the velocity+slope+manhole baseline
+(§20) plus these four — confirming no regression anywhere else.
+**Load-calc check (Phase 2 sub-check #5) is now rollout-ready.**
+
+**Phase 2 status: all 5 of 5 sub-checks built, and all 5 have passed real
+F12-04-233 acceptance tests.** Velocity (§17), slope (§18), equipment
+sizing (§19), manholes (§20), load-calc presence (§21). The Phase 2
+technical-audit basket scoped in project-memory follow-up #16 is
+complete.

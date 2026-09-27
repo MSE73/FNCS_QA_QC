@@ -231,6 +231,25 @@ class ManholeRow:
 
 
 @dataclass(frozen=True)
+class LoadCalcChecklistItem:
+    """One row of the firm-wide load-calc completeness checklist
+    (LoadCalcChecklist.xlsx) -- see docs/PROCEDURE.md #21 for sourcing.
+    Formalizes the manual calc review done by hand in an earlier session
+    (a real HAP report missing its Design Weather Data / System Input
+    Data / System Output Data sections, and a water-tank capacity used as
+    a bare input with no sizing derivation shown) into a keyword-presence
+    scan over the calc document's extracted text. Does NOT re-derive or
+    verify the load numbers themselves -- presence/absence only."""
+
+    category: str
+    item: str
+    keywords: str  # "|"-separated alternatives, any one match counts as present
+    required: bool = True
+    notes: str = ""
+    active: bool = True
+
+
+@dataclass(frozen=True)
 class EquipmentSizingRow:
     """One row of the per-project sizing-summary workbook's EquipmentSizing
     sheet -- manual comparison of a calc's required value against what's

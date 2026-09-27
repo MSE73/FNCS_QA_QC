@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fncsqaqc.checks import (
     code_compliance_equipment_sizing,
+    code_compliance_load_calc,
     code_compliance_manholes,
     code_compliance_slope,
     code_compliance_velocity,
@@ -27,6 +28,7 @@ from fncsqaqc.models import (
     EquipmentSizingRow,
     FileKind,
     LayerStandard,
+    LoadCalcChecklistItem,
     ManholeLimit,
     ManholeRow,
     RunResult,
@@ -56,6 +58,8 @@ class RunOptions:
     equipment_sizing: list[EquipmentSizingRow] = field(default_factory=list)
     manhole_sizing: list[ManholeRow] = field(default_factory=list)
     manhole_limits: list[ManholeLimit] = field(default_factory=list)
+    calc_text: str = ""
+    load_calc_checklist: list[LoadCalcChecklistItem] = field(default_factory=list)
 
 
 def run(options: RunOptions) -> RunResult:
@@ -158,5 +162,7 @@ def run(options: RunOptions) -> RunResult:
         result.extend(code_compliance_equipment_sizing.check(options.equipment_sizing))
     if options.manhole_sizing:
         result.extend(code_compliance_manholes.check(options.manhole_sizing, options.manhole_limits))
+    if options.load_calc_checklist:
+        result.extend(code_compliance_load_calc.check(options.calc_text, options.load_calc_checklist))
 
     return result

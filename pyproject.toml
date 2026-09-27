@@ -13,6 +13,7 @@ dependencies = [
     "click>=8.1",
     "rich>=13.7",
     "platformdirs>=4.2",
+    "pypdf>=5.0",
 ]
 
 [project.optional-dependencies]

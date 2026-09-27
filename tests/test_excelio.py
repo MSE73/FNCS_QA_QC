@@ -5,6 +5,7 @@ from fncsqaqc.excelio.common import ExcelSchemaError
 from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.layer_list import load_layer_standard
+from fncsqaqc.excelio.load_calc_checklist import load_load_calc_checklist
 from fncsqaqc.excelio.manhole_size_limits import load_manhole_size_limits
 from fncsqaqc.excelio.sizing_summary import (
     load_equipment_sizing,
@@ -245,3 +246,35 @@ def test_load_manhole_sizing_missing_column_raises(tmp_path):
 
     with pytest.raises(ExcelSchemaError):
         load_manhole_sizing(path)
+
+
+def test_load_load_calc_checklist_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "LoadCalcChecklist"
+    ws.append(["Category", "Item", "Keywords", "Required (Y/N)", "Notes", "Active (Y/N)"])
+    ws.append(["HAP Air Conditioning Report", "Design Weather Data", "Design Weather Data|Weather Data", "Y", "", "Y"])
+    ws.append(["Water Storage Sizing", "Tank Capacity Derivation", "Autonomy Days", "N", "Optional for now", "N"])
+    path = tmp_path / "checklist.xlsx"
+    wb.save(path)
+
+    items = load_load_calc_checklist(path)
+    assert len(items) == 2
+    weather = next(i for i in items if i.item == "Design Weather Data")
+    assert weather.required is True
+    assert weather.active is True
+    tank = next(i for i in items if i.item == "Tank Capacity Derivation")
+    assert tank.required is False
+    assert tank.active is False
+
+
+def test_load_load_calc_checklist_missing_column_raises(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "LoadCalcChecklist"
+    ws.append(["Category", "Item"])  # missing Keywords
+    path = tmp_path / "bad_checklist.xlsx"
+    wb.save(path)
+
+    with pytest.raises(ExcelSchemaError):
+        load_load_calc_checklist(path)

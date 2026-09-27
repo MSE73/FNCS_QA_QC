@@ -32,6 +32,8 @@ _SHEET_FOR_CHECK = {
     "velocity_check": "CodeCompliance",
     "slope_check": "CodeCompliance",
     "equipment_sizing_check": "CodeCompliance",
+    "manhole_check": "CodeCompliance",
+    "load_calc_check": "CodeCompliance",
 }
 
 _RESULT_COLUMNS = ["Severity", "File", "Message", "Details", "Occurrences"]

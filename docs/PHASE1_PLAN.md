@@ -277,8 +277,8 @@ different mechanisms — this is not one check, it's a basket:**
 | 1 | Duct/pipe velocity | Sizing-summary Excel (flow+size) vs. reference table | Decided (ASHRAE/SMACNA/ASPE/NFPA) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §17)** |
 | 2 | Drainage slope/levels | Sizing-summary Excel (invert levels+length) vs. min-slope table | Decided (IPC Table 704.1) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §18)** |
 | 3 | Equipment sizing vs. calc | Sizing-summary Excel (calc-required vs. installed capacity), tag-matched | N/A (comparison, not a code table) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §19)** |
-| 4 | Manhole sizing | Sizing-summary Excel (chamber size + depth) vs. min-size-by-depth table | Decided (UK Approved Document H, Table 11) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §22)** |
-| 5 | Load calc presence/completeness | Text/keyword search over the calc PDF/Excel itself — no drawing side at all | N/A (checklist, not numeric) | Not started |
+| 4 | Manhole sizing | Sizing-summary Excel (chamber size + depth) vs. min-size-by-depth table | Decided (UK Approved Document H, Table 11) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §20)** |
+| 5 | Load calc presence/completeness | Text/keyword search over the calc PDF/Excel itself — no drawing side at all | N/A (checklist, not numeric) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §21)** |
 
 **Why these five and not others:** this is the breakdown the user gave
 directly (load, equipment sizing, duct/pipe sizing, manholes, levels) —
@@ -329,18 +329,18 @@ Document H Table 11 (inspection chambers, minimum size by depth) rather
 than a public-sewer standard, since this is private on-site building
 drainage, not a municipal sewer.
 
-**#5 Load calc presence/completeness** — mechanically unlike the other
-four: no drawing side, no sizing-summary Excel, no numeric comparison. It
-formalizes what was already done manually in `docs/PROCEDURE.md`'s
-follow-up #5 (F12-04-233 calc review) — search the calc PDF/Excel's text
-for expected section headers/content (weather data, zone-level loads,
-system input/output, tank-capacity derivation, pump head+flow) and flag
-what's missing, the same way that manual review found HAP's weather-data
-and system-level reports absent. Does **not** re-derive or verify the load
-numbers themselves (out of scope — would mean independently re-running the
-load calc, unrealistic). Because it needs none of the shared
-sizing-summary infrastructure, this could be built **in parallel** with
-any of #1-#4 rather than strictly sequenced after them.
+**#5 Load calc presence/completeness** — built and passed,
+`docs/PROCEDURE.md` §21. Formalized the manual calc review into a
+keyword-presence scan (`checks/code_compliance_load_calc.py`) over the
+calc document's extracted text (`calcdoc/extract.py`, PDF via `pypdf` or
+Excel via `openpyxl`), matched against a firm-wide checklist
+(`LoadCalcChecklist.xlsx`). Re-running it against F12-04-233's real calc
+PDF reproduced the manual review's findings exactly: the same 4 real gaps
+(Design Weather Data, System Input Data, System Output Data, tank-
+capacity derivation) and no false positives on the 5 items that were
+actually present. Does **not** re-derive or verify the load numbers
+themselves (out of scope — would mean independently re-running the load
+calc, unrealistic) — presence/absence of expected content only.
 
 **Consolidation to decide before building #2-#4:** each of #1-#4 wants a
 per-project "sizing summary" Excel with a similar Tag/Type/System/values

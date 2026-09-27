@@ -8,12 +8,14 @@ from pathlib import Path
 
 import click
 
+from fncsqaqc.calcdoc.extract import UnsupportedCalcFileError, extract_text
 from fncsqaqc.checks.registry import CHECKS
 from fncsqaqc.config import OdaNotFoundError, resolve_config
 from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.drawings_list import load_drawings_list
 from fncsqaqc.excelio.layer_list import load_layer_standard
+from fncsqaqc.excelio.load_calc_checklist import load_load_calc_checklist
 from fncsqaqc.excelio.manhole_size_limits import load_manhole_size_limits
 from fncsqaqc.excelio.sizing_summary import (
     load_equipment_sizing,
@@ -89,6 +91,18 @@ def cli() -> None:
     help="Firm-wide manhole/inspection-chamber minimum-size reference table "
     "(docs/excel_templates/ManholeSizeLimits.xlsx).",
 )
+@click.option(
+    "--calc-file",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Per-project calc source document (.pdf or .xlsx/.xlsm). Requires --calc-checklist-excel.",
+)
+@click.option(
+    "--calc-checklist-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Firm-wide load-calc completeness checklist (docs/excel_templates/LoadCalcChecklist.xlsx).",
+)
 @click.option("--disable-check", "disabled_checks", multiple=True, help="Disable a check by id (repeatable).")
 @click.option(
     "--fail-on",
@@ -116,6 +130,8 @@ def check(
     equipment_sizing_excel: Path | None,
     manhole_excel: Path | None,
     manhole_limits_excel: Path | None,
+    calc_file: Path | None,
+    calc_checklist_excel: Path | None,
     disabled_checks: tuple[str, ...],
     fail_on: str,
     verbose: bool,
@@ -145,6 +161,10 @@ def check(
         raise click.BadParameter(
             "--manhole-excel requires --manhole-limits-excel", param_hint="--manhole-limits-excel"
         )
+    if calc_file and not calc_checklist_excel:
+        raise click.BadParameter(
+            "--calc-file requires --calc-checklist-excel", param_hint="--calc-checklist-excel"
+        )
 
     app_config = resolve_config(
         oda_path_flag=str(oda_path) if oda_path else None,
@@ -162,6 +182,13 @@ def check(
     equipment_sizing = load_equipment_sizing(equipment_sizing_excel) if equipment_sizing_excel else []
     manhole_sizing = load_manhole_sizing(manhole_excel) if manhole_excel else []
     manhole_limits = load_manhole_size_limits(manhole_limits_excel) if manhole_limits_excel else []
+    load_calc_checklist = load_load_calc_checklist(calc_checklist_excel) if calc_checklist_excel else []
+    calc_text = ""
+    if calc_file:
+        try:
+            calc_text = extract_text(calc_file)
+        except UnsupportedCalcFileError as exc:
+            raise click.BadParameter(str(exc), param_hint="--calc-file") from exc
 
     if output is None:
         timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -183,6 +210,8 @@ def check(
         equipment_sizing=equipment_sizing,
         manhole_sizing=manhole_sizing,
         manhole_limits=manhole_limits,
+        calc_text=calc_text,
+        load_calc_checklist=load_calc_checklist,
     )
 
     try:
