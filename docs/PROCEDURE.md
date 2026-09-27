@@ -1,6 +1,6 @@
 # FNCS-QAQC-SOP-01 — Drawing Submission QA/QC Procedure
 
-**Rev 0 — 2026-09-10 — Initial issue (Phase 1 scope)**
+**Rev 2 — 2026-09-27 — Phase 2 (code-compliance technical audit) rollout**
 
 ## 1. Purpose
 
@@ -12,10 +12,19 @@ instead of relying on manual review alone.
 ## 2. Scope
 
 Applies to AutoCAD DWG/DXF submissions. `.rvt` (Revit) files are discovered and
-logged but not checked — this is a Phase 1 limitation, see §8. Code-compliance
-calculations (ventilation, HVAC loads, water/rain tank sizing, drainage slopes,
-manholes, pipe velocity, duct sizing per Jordanian code / SBC) are **out of scope**
-until Phase 2 — continue reviewing these manually as today.
+logged but not checked — see §8. Two check tiers are covered:
+
+- **Drawing cleanliness + folder/deliverables completeness** (Phase 1, always
+  run): layer naming, text style/font/height compliance, purge/unused-resource
+  detection, and folder/drawings-list completeness. Always-on, three required
+  inputs (§5).
+- **Code-compliance technical audit** (Phase 2, opt-in per check): duct/pipe
+  velocity, drainage minimum slope, equipment sizing vs. calc, manhole/
+  inspection-chamber sizing, and load-calc presence/completeness. Each of the
+  five sub-checks is switched on independently via its own CLI flag(s) — a
+  project with none of the Phase 2 inputs filled in behaves exactly as before
+  (Phase 2 contributes nothing to the report unless its flags are passed). See
+  §5a and §6a.
 
 ## 3. Roles
 
@@ -61,6 +70,43 @@ there — the same blind spot §12 found and fixed for `DrawingsList`, except he
 it's a matter of how the input is filled in, not a tool bug (the schema already
 supports one row per item).
 
+## 5a. Phase 2 inputs (optional, code-compliance technical audit)
+
+Each row below is an independent, opt-in sub-check. Skip any row whose
+inputs you don't provide — the tool simply doesn't run that sub-check.
+Firm-wide reference tables (right-hand column) are senior-owned, shared
+across all projects, same as `FNCS_Layer_Standard.xlsx`; the per-project
+workbook is filled in by the engineer for that project only.
+
+| # | Sub-check | CLI flags | Per-project input | Firm-wide reference table (senior-owned) |
+|---|---|---|---|---|
+| 1 | Duct/pipe velocity | `--velocity-excel` + `--velocity-limits-excel` | `SizingSummary.xlsx`, `Velocity` sheet | `VelocityLimits.xlsx` |
+| 2 | Drainage minimum slope | `--slope-excel` + `--slope-limits-excel` | `SizingSummary.xlsx`, `Slope` sheet | `DrainageSlopeLimits.xlsx` |
+| 3 | Equipment sizing vs. calc | `--equipment-sizing-excel` | `SizingSummary.xlsx`, `EquipmentSizing` sheet | *(none — direct calc-vs-drawing comparison)* |
+| 4 | Manhole/inspection-chamber sizing | `--manhole-excel` + `--manhole-limits-excel` | `SizingSummary.xlsx`, `Manholes` sheet | `ManholeSizeLimits.xlsx` |
+| 5 | Load-calc presence/completeness | `--calc-file` + `--calc-checklist-excel` | *(none — points directly at the project's own calc PDF/Excel)* | `LoadCalcChecklist.xlsx` |
+
+All templates are in `docs/excel_templates/`, each with a sample row —
+copy `SizingSummary.xlsx` once per project and fill in whichever of its
+four sheets (`Velocity`/`Slope`/`EquipmentSizing`/`Manholes`) that
+project's enabled sub-checks need; leave the rest blank. `--calc-file`
+accepts `.pdf` or `.xlsx`/`.xlsm` and points directly at the project's own
+existing calc document — nothing to copy or fill in for that one.
+
+**Every Phase 2 reference table is sourced from a real, cited code or
+standard** (ASHRAE/SMACNA/ASPE/NFPA for velocity, IPC Table 704.1 for
+slope, UK Approved Document H for manhole sizing) — full sourcing and
+reasoning for every value is in §15/§18/§20. **None of these are
+independently confirmed against Jordanian code text** (the source codes
+exist but weren't practically searchable/digitized at the time — see
+§15's reasoning) — treat a FAIL from these three sub-checks as "conflicts
+with the international reference this table currently uses," and if a
+colleague has direct access to a conflicting mandatory Jordanian value,
+that should override the table (edit the `.xlsx`, not the code).
+Equipment-sizing (#3) and load-calc presence (#5) don't have this caveat
+— they compare a project's own drawing/calc against itself, not against
+an external code table.
+
 ## 6. Procedure
 
 1. Open a terminal in a **working folder that is not the submission folder itself**
@@ -84,12 +130,44 @@ supports one row per item).
 6. Work through the report sheet by sheet: `LayerCompliance`, `TextStyleFonts`,
    `TextHeights`, `PurgeUnusedResources`, `FolderDeliverables`, `DrawingsList`
    (includes an Unexpected/Unlisted block for discovered files matching no expected
-   row), `ConversionLog`, `Errors`.
+   row), `CodeCompliance` (Phase 2 sub-checks, empty unless their flags were passed
+   — see §5a/§6a), `ConversionLog`, `Errors`.
 7. Fix flagged drawings in AutoCAD, save, and re-run the same command — the cache
    means only changed files get reconverted, so repeat runs are fast.
 8. Repeat until the FAIL count is zero, or every remaining FAIL has a documented,
    senior-approved reason (see §7).
 9. Senior reviews the `Summary` sheet and signs off; submission proceeds.
+
+## 6a. Procedure addendum — running Phase 2 sub-checks
+
+Add whichever of the five flag-pairs from §5a apply to this project onto
+the same command as step 2 above, e.g. to run velocity and equipment
+sizing on top of the standard Phase 1 checks:
+
+```
+fncsqaqc check "D:\Projects\ProjectX\Submission" ^
+    --layers-excel "D:\Standards\FNCS_Layer_Standard.xlsx" ^
+    --deliverables-excel "D:\Projects\ProjectX\Deliverables.xlsx" ^
+    --drawings-excel "D:\Projects\ProjectX\DrawingsList.xlsx" ^
+    --velocity-excel "D:\Projects\ProjectX\SizingSummary.xlsx" ^
+    --velocity-limits-excel "D:\Standards\VelocityLimits.xlsx" ^
+    --equipment-sizing-excel "D:\Projects\ProjectX\SizingSummary.xlsx"
+```
+
+All five sub-checks write into the report's shared `CodeCompliance` sheet
+— read it the same way as the other report sheets in step 6. A missing
+half of a required pair (e.g. `--velocity-excel` without
+`--velocity-limits-excel`) fails fast with a clear error before any DWG
+is opened, rather than silently skipping the check.
+
+**Recommended rollout order for a team new to Phase 2:** start with
+whichever sub-check the current project's data most readily supports —
+equipment sizing (#3) and load-calc presence (#5) need no firm-wide
+reference table and no drawing-geometry measurement, so they're the
+lowest-friction way to get a junior engineer comfortable with the
+`SizingSummary.xlsx`/`--calc-file` pattern before tackling velocity/slope/
+manhole, which additionally require judgment about which reference-table
+row applies.
 
 ## 7. Severities and exceptions
 
@@ -104,19 +182,29 @@ supports one row per item).
 To disable a specific check for a run, use `--disable-check <id>` (repeatable).
 This must be senior-approved and the reason recorded manually in the project's QA
 log — the tool does not log a reason for you. Run with an invalid id to see the
-list of valid check ids in the error message.
+list of valid check ids in the error message. **`--disable-check` only covers the
+four always-on Phase 1 checks** (`layer_names`, `text_style_fonts`, `text_heights`,
+`purge`) — Phase 2 sub-checks aren't in that list at all, since they're already
+opt-in: to skip one, simply don't pass its CLI flags (§5a/§6a).
 
 An opt-in, heuristic equipment-tagging check (item 12: every equipment tagged +
 present in an equipment schedule) is available via `--enable-equipment-tag-check`;
 it is off by default because tags today are plain TEXT/MTEXT, not attributed
 blocks, and there is no strict current standard to check against.
 
-## 8. Known limitations (defer to Phase 2)
+## 8. Known limitations
 
-- **Code compliance** (ventilation, HVAC load, tank sizing, drainage, duct sizing,
-  SBC) is not automated. Continue the current manual review process. This is
-  blocked on standardizing calc inputs (today an unstandardized mix of
-  Excel/PDF/HAP/Elite exports).
+- **Code compliance is now automated for five specific things** (§5a): duct/pipe
+  velocity, drainage minimum slope, equipment sizing vs. calc, manhole/inspection-
+  chamber sizing, and load-calc presence/completeness. Everything else in the
+  original Jordanian-code/SBC scope (ventilation design, HVAC load calculation
+  itself, water/rain tank capacity *calculation*, duct/pipe *sizing selection*)
+  is still **not automated** — continue the current manual review process for
+  anything not in the §5a list.
+- **Three of the five Phase 2 reference tables are not Jordanian-code-verified**
+  (velocity, slope, manhole sizing — see §5a's caveat and §15 for the reasoning).
+  Equipment sizing and load-calc presence compare a project against itself, so
+  this caveat doesn't apply to them.
 - **Revit (.rvt)** files are discovered and listed in the report as "deferred," but
   no content checks run against them.
 
@@ -129,6 +217,10 @@ blocks, and there is no strict current standard to check against.
 | Row in `ConversionLog` marked "needed repair" | DWG has structural corruption; `ezdxf.recover` fallback kicked in | Open and re-save the DWG in AutoCAD, then re-run |
 | Row in `Errors` sheet | A specific file failed to open even after repair-fallback | Open the file directly in AutoCAD to diagnose; the run still completed for all other files |
 | A layer/drawing you know is compliant shows FAIL | Firm standard workbook may be out of date, or filename pattern in `DrawingsList.xlsx` doesn't match actual naming | Check with the senior owner of `FNCS_Layer_Standard.xlsx` before assuming the drawing is wrong |
+| `Error: --velocity-excel requires --velocity-limits-excel` (or slope/manhole/calc equivalent) | Only half of a Phase 2 flag-pair was passed | Add the missing flag from §5a's table — both halves of a pair are required together |
+| `Error: Unsupported calc file type '.doc'` (or similar) from `--calc-file` | Calc source isn't a `.pdf` or `.xlsx`/`.xlsm` | Only those two extensions are supported; if the real calc is another format (e.g. a scanned image, or Elite/HAP's native project file), export it to PDF or Excel first |
+| `CodeCompliance` sheet is empty even though Phase 2 flags were passed | Normal if every sub-check's inputs pass cleanly (a real, well-designed project can produce zero findings — see §17/§18/§19/§20/§21's real acceptance-test results) | Not a bug by itself; if in doubt, deliberately break one input value (e.g. a wrong pipe size) to confirm the check is actually running |
+| Phase 2 FAIL conflicts with a Jordanian code value you have direct access to | Velocity/slope/manhole reference tables default to ASHRAE/SMACNA/ASPE/NFPA/IPC/UK AD H, not independently verified against Jordanian code text (§5a) | The Jordanian value wins — edit the firm-wide `.xlsx` (`VelocityLimits.xlsx`/`DrainageSlopeLimits.xlsx`/`ManholeSizeLimits.xlsx`), don't just override the one project's FAIL |
 
 ## 10. Revision history
 
@@ -136,6 +228,7 @@ blocks, and there is no strict current standard to check against.
 |---|---|---|
 | 0 | 2026-09-10 | Initial issue — Phase 1 (drawing cleanliness + folder/deliverables completeness) |
 | 1 | 2026-09-12 | Real-folder acceptance test run against a live submission (F12-04-233 Bashar Villa, Mechanical Package). Found and fixed a crash on AutoCAD extension entities (e.g. `ARCALIGNEDTEXT`) in the purge/reference scanner. Also surfaced a firm-wide layer-naming drift, resolved same day — see §11. |
+| 2 | 2026-09-27 | Phase 2 (code-compliance technical audit) rollout: all five sub-checks (§5a) built and passed real F12-04-233 acceptance tests (§17-§21). §2, §5a (new), §6a (new), §7, §8, §9 updated to cover the new opt-in flags, inputs, and troubleshooting. |
 
 ## 11. Resolved: mechanical layer naming standard (2026-09-12)
 
