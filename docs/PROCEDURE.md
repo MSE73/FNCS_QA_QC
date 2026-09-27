@@ -714,6 +714,99 @@ FAIL / 916 WARN / 0 INFO vs. the 249/916/0 baseline — the entire delta
 (+1 FAIL) is the `IRRP-01` finding above, confirming no regression.
 
 **Equipment-sizing-vs-calc check (Phase 2 sub-check #3) is rollout-ready.**
-Three of five Phase 2 sub-checks now built; #1 and #3 have passed real
-acceptance tests, #2 is built/tested but its acceptance test is blocked on
-confirming a drawing's real-world scale (§18).
+
+## 20. Built and passed: manhole/inspection-chamber sizing, sub-check #4 (2026-09-27)
+
+Fourth item in the Phase 2 sub-check list (`docs/PHASE1_PLAN.md`'s "Phase 2
+overall scope" section) — flagged there as the lowest-confidence of the
+five, since neither the code basis nor whether real manhole schedules even
+exist had been checked. Both open questions resolved favorably this
+session.
+
+**Do manhole schedules exist?** Yes, and richer than expected: F12-04-233's
+`P0801 SEWAGE MANHOLES SCHEDULE` (the same `ACAD_TABLE` decoded for the
+slope check, §18) has 14 columns per manhole — `MH. REF.`, `DRAIN TYPE`,
+`DRAIN OUTLET DIA.`, `C.L. (m)`, `I.L. (m)`, `BASE I.L. (m)`,
+`CHAMBER TYPE`, `MH CONST. TYPE`, `MH SIZE (mm)`,
+`APPROXIMATE DEPTH (m)`, `COVER SIZE`, `COVER TYPE`, `COVER SEAL`,
+`BEARING TYPE`. Real values: MH-01/MH-02 are 600×600mm square chambers at
+0.60m/0.95m depth; MH-03 is a round Ø900mm chamber (the DXF's raw text
+`%%C900` is AutoCAD's diameter-symbol code for `Ø900`) at 0.92m depth.
+Depth is stated directly as its own field — no drawing-geometry
+measurement or calibration needed, unlike slope's run-length problem.
+
+**Code basis, researched via web search this session:** neither IPC nor
+the Ten States Standards ("Recommended Standards for Wastewater
+Facilities," a US public-sewer standard) fit well — IPC 708 governs
+manhole *spacing*, not size, and Ten States mandates a flat 1200mm minimum
+regardless of depth, which is a public-collector-sewer rule, not a
+private building's own on-site drainage. **UK Approved Document H**
+("Drainage & Waste Disposal," Building Regulations 2010, 2002 ed. inc.
+2010 amendments — explicitly scoped to domestic/small non-domestic
+buildings) is the better-fitting analog and the only source found with a
+real numeric depth-vs-size table: Table 11 (inspection chambers) gives
+minimum size by depth alone; Table 12 (manholes) adds a further
+by-pipe-diameter dependency once a chamber is deep enough to need human
+entry. Non-Jordanian, same "best practically-searchable stand-in"
+convention as `VelocityLimits.xlsx`/`DrainageSlopeLimits.xlsx`.
+
+**`ManholeSizeLimits.xlsx`** (`docs/excel_templates/ManholeSizeLimits.xlsx`):
+`Min Depth (m) | Max Depth (m) | Min Size Round (mm) | Min Size Square
+(mm) | Code Basis | Notes | Active (Y/N)`. Three depth tiers, both bounds
+inclusive matching AD H's own "not exceeding X" / "exceeding X but not
+exceeding Y" phrasing (a depth landing exactly on a shared boundary
+matches the shallower tier — see the code comment in `_find_limit`):
+
+| Depth | Min round (mm) | Min square/rect (mm, smaller side) | Source |
+|---|---|---|---|
+| 0 - 0.6m | 190 | 100 | Table 11, shallow inspection-chamber tier (drains <=150mm only) |
+| 0.6 - 1.2m | 450 | 450 | Table 11, deeper inspection-chamber tier |
+| >1.2m | 1200 | 675 | Table 12 footnote 7, general "any manhole serving a drain" floor |
+
+The MVP simplification is flagged explicitly in that top row's Notes:
+Table 12 further reduces the >1.2m minimum for smaller connecting pipes
+at depth <1.5m (e.g. 1000mm for a 150mm pipe) — this table always applies
+the flatter, more conservative 1200/675mm floor instead, so it could
+over-FAIL a technically-compliant small manhole just past 1.2m depth.
+Also noted: AD H para 2.54 (manholes deeper than 1m need step irons/a
+ladder) is informational only, not numerically enforced here.
+
+**`SizingSummary.xlsx`** gained a `Manholes` sheet: `Tag | MH Size (mm) |
+Approx Depth (m) | Notes` — directly mirroring the real firm schedule's
+own `MH SIZE (mm)`/`APPROXIMATE DEPTH (m)` columns.
+
+**The check** (`checks/code_compliance_manholes.py`, id `manhole_check`)
+parses `MH Size` via a new `parse_manhole_size()` in `sizing_parsing.py`
+(an "AxB" pattern -> square, min side; a bare number, optionally with
+Ø/DIA/D-style prefixes -> round, diameter), matches the row's depth
+against `ManholeSizeLimits.xlsx` by range, and compares the parsed
+dimension against whichever of the limit's two columns matches the
+chamber's shape — same WARN-chain/FAIL shape as `slope_check`
+(unparseable size, missing/non-positive depth, no matching tier, inactive
+tier -> WARN; below the matching minimum -> FAIL). Writes into the shared
+`CodeCompliance` sheet. 20 new tests (93 total, all passing): 11 for the
+check's matching/shape/tie-break logic (including a dedicated test for
+the shared-boundary tie-break rule), 4 for the two new Excel loaders'
+happy/error paths, plus the sample-row wiring already exercised by the
+new `Manholes` sheet added to `docs/excel_templates/SizingSummary.xlsx`.
+Wired into the CLI as `--manhole-excel`/`--manhole-limits-excel` (same
+required-together pattern as velocity/slope).
+
+**Passed a real F12-04-233 acceptance test immediately, no caveats** —
+every input came straight from the schedule's own stated fields, same
+confidence level as equipment-sizing (§19), not slope's calibration
+problem. `scratch/build_manhole_summary_F12-04-233.py` →
+`SizingSummary_F12-04-233.xlsx`'s `Manholes` sheet (3 rows). All three
+real chambers pass silently: MH-01 (0.60m, square 600mm) matches the
+shallow tier (min 100mm) via the tie-break rule; MH-02 (0.95m, square
+600mm) and MH-03 (0.92m, round Ø900mm) both match the 0.6-1.2m tier (min
+450mm) — all comfortably clear. Full CLI run (velocity + slope + manhole,
+no equipment-tag check): **250 FAIL / 919 WARN / 0 INFO**, identical to
+the velocity+slope baseline (§18 follow-up) — the manhole check
+contributed zero new findings, confirming no regression and a
+realistic clean pass for a genuinely adequately-sized real project.
+**Manhole check (Phase 2 sub-check #4) is now rollout-ready.**
+
+**Phase 2 status: 4 of 5 sub-checks built, all 4 have passed real
+F12-04-233 acceptance tests.** Only sub-check #5 (load-calc
+presence/completeness) remains.

@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fncsqaqc.checks import (
     code_compliance_equipment_sizing,
+    code_compliance_manholes,
     code_compliance_slope,
     code_compliance_velocity,
     dwg_equipment_tags,
@@ -26,6 +27,8 @@ from fncsqaqc.models import (
     EquipmentSizingRow,
     FileKind,
     LayerStandard,
+    ManholeLimit,
+    ManholeRow,
     RunResult,
     Severity,
     SizingRow,
@@ -51,6 +54,8 @@ class RunOptions:
     slope_sizing: list[SlopeRow] = field(default_factory=list)
     slope_limits: list[SlopeLimit] = field(default_factory=list)
     equipment_sizing: list[EquipmentSizingRow] = field(default_factory=list)
+    manhole_sizing: list[ManholeRow] = field(default_factory=list)
+    manhole_limits: list[ManholeLimit] = field(default_factory=list)
 
 
 def run(options: RunOptions) -> RunResult:
@@ -151,5 +156,7 @@ def run(options: RunOptions) -> RunResult:
         result.extend(code_compliance_slope.check(options.slope_sizing, options.slope_limits))
     if options.equipment_sizing:
         result.extend(code_compliance_equipment_sizing.check(options.equipment_sizing))
+    if options.manhole_sizing:
+        result.extend(code_compliance_manholes.check(options.manhole_sizing, options.manhole_limits))
 
     return result

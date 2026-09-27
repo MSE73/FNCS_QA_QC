@@ -275,9 +275,9 @@ different mechanisms — this is not one check, it's a basket:**
 | # | Sub-check | Mechanism | Code basis status | Built? |
 |---|---|---|---|---|
 | 1 | Duct/pipe velocity | Sizing-summary Excel (flow+size) vs. reference table | Decided (ASHRAE/SMACNA/ASPE/NFPA) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §17)** |
-| 2 | Drainage slope/levels | Sizing-summary Excel (invert levels+length) vs. min-slope table | Decided (IPC Table 704.1) | **Built, smoke-tested — real acceptance test blocked on drawing-scale confirmation (`docs/PROCEDURE.md` §18)** |
+| 2 | Drainage slope/levels | Sizing-summary Excel (invert levels+length) vs. min-slope table | Decided (IPC Table 704.1) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §18)** |
 | 3 | Equipment sizing vs. calc | Sizing-summary Excel (calc-required vs. installed capacity), tag-matched | N/A (comparison, not a code table) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §19)** |
-| 4 | Manhole sizing | Sizing-summary Excel (manhole dims + connecting pipe sizes) vs. code table | Not researched — lowest confidence of the five | Not started |
+| 4 | Manhole sizing | Sizing-summary Excel (chamber size + depth) vs. min-size-by-depth table | Decided (UK Approved Document H, Table 11) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §22)** |
 | 5 | Load calc presence/completeness | Text/keyword search over the calc PDF/Excel itself — no drawing side at all | N/A (checklist, not numeric) | Not started |
 
 **Why these five and not others:** this is the breakdown the user gave
@@ -320,13 +320,14 @@ neither `equipment_tags` nor `velocity_check` catches it today (velocity
 only compares drawing-side flow against a code limit, never against the
 calc's own number).
 
-**#4 Manhole sizing** — lowest confidence: no code basis researched yet,
-and unclear whether manhole dimensions are even captured in a schedule
-today (unlike pumps/tanks, which the `equipment_tags` work confirmed exist
-as `ACAD_TABLE` schedules on this firm's drawings) or only as annotation
-text. **Needs a firm-side check** (does the user have manhole schedules on
-real projects at all?) before this can be spec'd concretely — recommended
-**last** among the four sizing-summary-style checks, pending that answer.
+**#4 Manhole sizing** — built and passed, `docs/PROCEDURE.md` §22. The
+open questions here turned out to both resolve favorably: F12-04-233's
+`P0801 SEWAGE MANHOLES SCHEDULE` is a real `ACAD_TABLE` with 14 columns
+(MH size, approximate depth, invert levels, cover/chamber/construction
+type — more detail than expected), and the code basis is UK Approved
+Document H Table 11 (inspection chambers, minimum size by depth) rather
+than a public-sewer standard, since this is private on-site building
+drainage, not a municipal sewer.
 
 **#5 Load calc presence/completeness** — mechanically unlike the other
 four: no drawing side, no sizing-summary Excel, no numeric comparison. It

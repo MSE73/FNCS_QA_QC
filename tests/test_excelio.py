@@ -5,7 +5,13 @@ from fncsqaqc.excelio.common import ExcelSchemaError
 from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.layer_list import load_layer_standard
-from fncsqaqc.excelio.sizing_summary import load_equipment_sizing, load_slope_sizing, load_velocity_sizing
+from fncsqaqc.excelio.manhole_size_limits import load_manhole_size_limits
+from fncsqaqc.excelio.sizing_summary import (
+    load_equipment_sizing,
+    load_manhole_sizing,
+    load_slope_sizing,
+    load_velocity_sizing,
+)
 from fncsqaqc.excelio.velocity_limits import load_velocity_limits
 
 
@@ -189,3 +195,53 @@ def test_load_equipment_sizing_missing_column_raises(tmp_path):
 
     with pytest.raises(ExcelSchemaError):
         load_equipment_sizing(path)
+
+
+def test_load_manhole_size_limits_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "ManholeSizeLimits"
+    ws.append(
+        ["Min Depth (m)", "Max Depth (m)", "Min Size Round (mm)", "Min Size Square (mm)", "Code Basis", "Active (Y/N)"]
+    )
+    ws.append([0, 0.6, 190, 100, "UK Approved Document H, Table 11", "Y"])
+    ws.append([1.2, None, 1200, 675, "UK Approved Document H, Table 12", "N"])
+    path = tmp_path / "manhole_limits.xlsx"
+    wb.save(path)
+
+    limits = load_manhole_size_limits(path)
+    assert len(limits) == 2
+    shallow = next(l for l in limits if l.min_depth_m == 0)
+    assert shallow.max_depth_m == 0.6
+    assert shallow.active is True
+    deep = next(l for l in limits if l.min_depth_m == 1.2)
+    assert deep.max_depth_m is None
+    assert deep.active is False
+
+
+def test_load_manhole_sizing_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Manholes"
+    ws.append(["Tag", "MH Size (mm)", "Approx Depth (m)", "Notes"])
+    ws.append(["MH-01", "600X600", 0.95, "Sample"])
+    path = tmp_path / "sizing_summary.xlsx"
+    wb.save(path)
+
+    rows = load_manhole_sizing(path)
+    assert len(rows) == 1
+    assert rows[0].tag == "MH-01"
+    assert rows[0].mh_size == "600X600"
+    assert rows[0].depth_m == 0.95
+
+
+def test_load_manhole_sizing_missing_column_raises(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Manholes"
+    ws.append(["Tag"])  # missing MH Size/Approx Depth
+    path = tmp_path / "bad_manholes.xlsx"
+    wb.save(path)
+
+    with pytest.raises(ExcelSchemaError):
+        load_manhole_sizing(path)

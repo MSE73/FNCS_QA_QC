@@ -14,7 +14,13 @@ from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.drawings_list import load_drawings_list
 from fncsqaqc.excelio.layer_list import load_layer_standard
-from fncsqaqc.excelio.sizing_summary import load_equipment_sizing, load_slope_sizing, load_velocity_sizing
+from fncsqaqc.excelio.manhole_size_limits import load_manhole_size_limits
+from fncsqaqc.excelio.sizing_summary import (
+    load_equipment_sizing,
+    load_manhole_sizing,
+    load_slope_sizing,
+    load_velocity_sizing,
+)
 from fncsqaqc.excelio.velocity_limits import load_velocity_limits
 from fncsqaqc.models import Severity
 from fncsqaqc.pipeline import RunOptions, run as run_pipeline
@@ -70,6 +76,19 @@ def cli() -> None:
     help="Per-project sizing-summary workbook (EquipmentSizing sheet). No reference table needed -- "
     "direct calc-vs-drawing comparison.",
 )
+@click.option(
+    "--manhole-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Per-project sizing-summary workbook (Manholes sheet). Requires --manhole-limits-excel.",
+)
+@click.option(
+    "--manhole-limits-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Firm-wide manhole/inspection-chamber minimum-size reference table "
+    "(docs/excel_templates/ManholeSizeLimits.xlsx).",
+)
 @click.option("--disable-check", "disabled_checks", multiple=True, help="Disable a check by id (repeatable).")
 @click.option(
     "--fail-on",
@@ -95,6 +114,8 @@ def check(
     slope_excel: Path | None,
     slope_limits_excel: Path | None,
     equipment_sizing_excel: Path | None,
+    manhole_excel: Path | None,
+    manhole_limits_excel: Path | None,
     disabled_checks: tuple[str, ...],
     fail_on: str,
     verbose: bool,
@@ -120,6 +141,10 @@ def check(
         raise click.BadParameter(
             "--slope-excel requires --slope-limits-excel", param_hint="--slope-limits-excel"
         )
+    if manhole_excel and not manhole_limits_excel:
+        raise click.BadParameter(
+            "--manhole-excel requires --manhole-limits-excel", param_hint="--manhole-limits-excel"
+        )
 
     app_config = resolve_config(
         oda_path_flag=str(oda_path) if oda_path else None,
@@ -135,6 +160,8 @@ def check(
     slope_sizing = load_slope_sizing(slope_excel) if slope_excel else []
     slope_limits = load_drainage_slope_limits(slope_limits_excel) if slope_limits_excel else []
     equipment_sizing = load_equipment_sizing(equipment_sizing_excel) if equipment_sizing_excel else []
+    manhole_sizing = load_manhole_sizing(manhole_excel) if manhole_excel else []
+    manhole_limits = load_manhole_size_limits(manhole_limits_excel) if manhole_limits_excel else []
 
     if output is None:
         timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -154,6 +181,8 @@ def check(
         slope_sizing=slope_sizing,
         slope_limits=slope_limits,
         equipment_sizing=equipment_sizing,
+        manhole_sizing=manhole_sizing,
+        manhole_limits=manhole_limits,
     )
 
     try:

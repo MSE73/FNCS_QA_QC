@@ -201,6 +201,36 @@ class SlopeRow:
 
 
 @dataclass(frozen=True)
+class ManholeLimit:
+    """One row of the firm-wide manhole/inspection-chamber minimum-size
+    reference table (ManholeSizeLimits.xlsx) -- see docs/PROCEDURE.md #20
+    for sourcing. A range lookup by chamber depth (m), not by connecting
+    pipe diameter -- UK Approved Document H's inspection-chamber table
+    (Table 11), the code basis used here, keys minimum size off depth
+    alone for chambers in this depth range."""
+
+    min_depth_m: float
+    max_depth_m: float | None  # None = open-ended (deepest tier)
+    min_size_round_mm: float
+    min_size_square_mm: float  # minimum SIDE of a square/rect chamber
+    code_basis: str = ""
+    notes: str = ""
+    active: bool = True
+
+
+@dataclass(frozen=True)
+class ManholeRow:
+    """One row of the per-project sizing-summary workbook's Manholes sheet
+    -- manual engineer input, mirrors the columns this firm's own manhole
+    schedules already carry (MH SIZE (mm), APPROXIMATE DEPTH (m))."""
+
+    tag: str
+    mh_size: str  # e.g. "600X600" (square) or "900" / "O900" (round)
+    depth_m: float | None
+    notes: str = ""
+
+
+@dataclass(frozen=True)
 class EquipmentSizingRow:
     """One row of the per-project sizing-summary workbook's EquipmentSizing
     sheet -- manual comparison of a calc's required value against what's

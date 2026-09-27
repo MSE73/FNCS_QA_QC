@@ -1,13 +1,12 @@
-"""Loads the per-project sizing-summary workbook. Velocity, Slope, and
-EquipmentSizing sheets exist so far -- a Manholes sheet gets added to this
-same file once that check is built (docs/PHASE1_PLAN.md's "Phase 2 overall
-scope" section)."""
+"""Loads the per-project sizing-summary workbook. Velocity, Slope,
+EquipmentSizing, and Manholes sheets (docs/PHASE1_PLAN.md's "Phase 2
+overall scope" section)."""
 from __future__ import annotations
 
 from pathlib import Path
 
 from fncsqaqc.excelio.common import as_float, as_str, read_rows
-from fncsqaqc.models import EquipmentSizingRow, SizingRow, SlopeRow
+from fncsqaqc.models import EquipmentSizingRow, ManholeRow, SizingRow, SlopeRow
 
 
 def load_velocity_sizing(workbook_path: Path) -> list[SizingRow]:
@@ -46,6 +45,25 @@ def load_equipment_sizing(workbook_path: Path) -> list[EquipmentSizingRow]:
             installed_value=as_float(row.get("Installed (Drawing)")),
             unit=as_str(row.get("Unit")),
             tolerance_pct=as_float(row.get("Tolerance (%)")) or 0.0,
+            notes=as_str(row.get("Notes")),
+        )
+        for row in rows
+        if as_str(row["Tag"])
+    ]
+
+
+def load_manhole_sizing(workbook_path: Path) -> list[ManholeRow]:
+    rows = read_rows(
+        workbook_path,
+        "Manholes",
+        required_columns=["Tag", "MH Size (mm)", "Approx Depth (m)"],
+        optional_columns=["Notes"],
+    )
+    return [
+        ManholeRow(
+            tag=as_str(row["Tag"]),
+            mh_size=as_str(row.get("MH Size (mm)")),
+            depth_m=as_float(row.get("Approx Depth (m)")),
             notes=as_str(row.get("Notes")),
         )
         for row in rows
