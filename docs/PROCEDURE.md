@@ -605,6 +605,45 @@ confirmed length source (a labeled run length on the drawing, or a
 verified drawing scale) or the user confirming the file's real-world unit
 directly — follow-up item, not done here.
 
+**Follow-up (2026-09-27) — blocker resolved, acceptance test passed.**
+`P0101 DRAINGE SYSTEM-04.dwg` itself still has no dimension entities or
+usable `$INSUNITS`, but the linked site plan (`cad\MECH\M0G01 SITE.dwg`,
+same project, same coordinate system) carries its own dimensioned geometry
+that settles the question without guessing. Cross-checked four independent
+signals, all agreeing raw drawing units = **meters**:
+
+- A `"TRENCH\n3.2 x 0.2 x 0.3m"` label sits directly over a drawn
+  rectangle/polyline whose raw side lengths are ~3.2/0.2/0.3 — matches at
+  raw=meters, not at raw=mm (would be absurdly tiny) or raw=mm-as-thousands
+  (would be absurdly huge).
+- Two `"0.80"`/`"0.46"` dimension-style text labels sit next to drawn
+  segments whose raw lengths cluster at 0.42–0.85 — matches raw=meters.
+- A manhole-cover-sized `CIRCLE` on the site plan has raw radius 0.292 ->
+  584mm diameter at raw=meters, a realistic manhole cover; nonsensical at
+  any other unit hypothesis.
+- The small filled-dot symbols marking pipe nodes/manholes have raw radius
+  ~0.03 -> 30mm at raw=meters, a plausible tiny schematic marker; at
+  raw=mm that would be a sub-millimeter, invisible dot.
+
+With units confirmed, rebuilt the real MH-01/02/03 run lengths from
+`P0101`'s own manhole-tag and manhole-block-symbol coordinates (the two
+independent position sources agree to within ~1m, immaterial at this
+slope's percentage scale): MH-01→MH-02 ≈ 6.9m, MH-02→MH-03 ≈ 17.0m. Script:
+`scratch/build_slope_summary_F12-04-233.py`, writing a `Slope` sheet into
+the same `scratch/SizingSummary_F12-04-233.xlsx` used for §17's velocity
+data. Combined with the real invert levels already read off `P0801`'s
+`SEWAGE MANHOLES SCHEDULE` (§17: MH-01 IL=981.50, MH-02=980.95, MH-03=
+980.28, 150mm outlets throughout): MH-01→MH-02 computes to ~8% grade,
+MH-02→MH-03 to ~4% grade — both comfortably above the 1.04% IPC 704.1
+minimum for 150mm pipe, so both rows pass silently.
+
+Full CLI run (`--velocity-excel`/`--velocity-limits-excel` +
+`--slope-excel`/`--slope-limits-excel`, no equipment-tag check): **250
+FAIL / 919 WARN / 0 INFO** — identical to the velocity-only baseline from
+§17, meaning the two new Slope rows produced zero additional findings, as
+expected for a genuinely well-graded real project. No regression anywhere
+else. **Slope check (Phase 2 sub-check #2) is now rollout-ready.**
+
 ## 19. Built and passed: equipment sizing vs. calc, sub-check #3 (2026-09-26)
 
 Third item in the Phase 2 sub-check list (`docs/PHASE1_PLAN.md`'s "Phase 2
