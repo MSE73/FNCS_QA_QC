@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from fncsqaqc.checks import (
+    code_compliance_calc_consistency,
     code_compliance_equipment_sizing,
     code_compliance_load_calc,
     code_compliance_manholes,
@@ -22,6 +23,7 @@ from fncsqaqc.discovery.file_classifier import discover
 from fncsqaqc.dxf import loader as dxf_loader
 from fncsqaqc.dxf.reference_scanner import scan as scan_references
 from fncsqaqc.models import (
+    CalcConsistencyRule,
     CheckResult,
     DeliverableItem,
     DrawingListItem,
@@ -60,6 +62,7 @@ class RunOptions:
     manhole_limits: list[ManholeLimit] = field(default_factory=list)
     calc_text: str = ""
     load_calc_checklist: list[LoadCalcChecklistItem] = field(default_factory=list)
+    calc_consistency_rules: list[CalcConsistencyRule] = field(default_factory=list)
 
 
 def run(options: RunOptions) -> RunResult:
@@ -164,5 +167,9 @@ def run(options: RunOptions) -> RunResult:
         result.extend(code_compliance_manholes.check(options.manhole_sizing, options.manhole_limits))
     if options.load_calc_checklist:
         result.extend(code_compliance_load_calc.check(options.calc_text, options.load_calc_checklist))
+    if options.calc_consistency_rules:
+        result.extend(
+            code_compliance_calc_consistency.check(options.calc_text, options.calc_consistency_rules)
+        )
 
     return result

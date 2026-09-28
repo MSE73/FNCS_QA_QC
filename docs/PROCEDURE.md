@@ -85,15 +85,18 @@ workbook is filled in by the engineer for that project only.
 | 3 | Equipment sizing vs. calc | `--equipment-sizing-excel` | `SizingSummary.xlsx`, `EquipmentSizing` sheet | *(none — direct calc-vs-drawing comparison)* |
 | 4 | Manhole/inspection-chamber sizing | `--manhole-excel` + `--manhole-limits-excel` | `SizingSummary.xlsx`, `Manholes` sheet | `ManholeSizeLimits.xlsx` |
 | 5 | Load-calc presence/completeness | `--calc-file` + `--calc-checklist-excel` | *(none — points directly at the project's own calc PDF/Excel)* | `LoadCalcChecklist.xlsx` |
+| 6 | Calc internal numeric consistency | `--calc-file` + `--calc-consistency-excel` | *(none — same calc document as #5)* | `CalcConsistencyRules.xlsx` |
 
 All templates are in `docs/excel_templates/`, each with a sample row —
 copy `SizingSummary.xlsx` once per project and fill in whichever of its
 four sheets (`Velocity`/`Slope`/`EquipmentSizing`/`Manholes`) that
 project's enabled sub-checks need; leave the rest blank. `--calc-file`
 accepts `.pdf` or `.xlsx`/`.xlsm` and points directly at the project's own
-existing calc document — nothing to copy or fill in for that one.
+existing calc document — nothing to copy or fill in for that one; pass it
+once and add either or both of `--calc-checklist-excel`/
+`--calc-consistency-excel` depending which of #5/#6 you want to run.
 
-**Every Phase 2 reference table is sourced from a real, cited code or
+**Every code-basis reference table is sourced from a real, cited code or
 standard** (ASHRAE/SMACNA/ASPE/NFPA for velocity, IPC Table 704.1 for
 slope, UK Approved Document H for manhole sizing) — full sourcing and
 reasoning for every value is in §15/§18/§20. **None of these are
@@ -103,9 +106,12 @@ exist but weren't practically searchable/digitized at the time — see
 with the international reference this table currently uses," and if a
 colleague has direct access to a conflicting mandatory Jordanian value,
 that should override the table (edit the `.xlsx`, not the code).
-Equipment-sizing (#3) and load-calc presence (#5) don't have this caveat
-— they compare a project's own drawing/calc against itself, not against
-an external code table.
+Equipment-sizing (#3), load-calc presence (#5), and calc consistency (#6)
+don't have this caveat — each compares a project's own drawing/calc
+against itself, not against an external code table. #6 has a different
+caveat instead (§23): some rows may be left `Active=N` after testing
+found a keyword too ambiguous for reliable use — check a row's own Notes
+before assuming every active row is bulletproof.
 
 ## 6. Procedure
 
@@ -1053,3 +1059,99 @@ input, not a one-time artifact — expect a second (and third, ...) real
 project to surface more phrasing/design-choice gaps like these two, and
 widen keywords (or add conditional rows) the same way, rather than
 treating F12-04-233's original manual review as the final word.
+
+## 23. Built and passed: calc internal numeric consistency, sub-check #6 (2026-09-28)
+
+A sixth Phase 2 item, beyond the five originally scoped in project-memory
+follow-up #16. Explicitly **not** a re-derivation or verification of the
+load numbers themselves — same hard boundary as `load_calc_check` (§21):
+this tool does not re-run anyone's HVAC load calc. Instead it checks a
+calc document **against itself**: does the same equipment tag state a
+different value for the same labeled field in two places in one document?
+
+**Design pivot, made before writing any reference-table row:** the first
+idea tried was "does a stated total equal the sum of its component line
+items" (e.g. `Total Head Loss = Static Height + Friction Loss + ...`).
+Tested directly against F12-04-233's real calc text before committing to
+it — and it fails its own smoke test: the real pump-head calc expresses
+friction loss as a *rate* (`Friction Loss in pipes 40 mm/m`) that needs
+multiplying by pipe length before it can be summed, and a naive flat sum
+of the other listed components undercounts the stated total by exactly
+that missing term. A real, correct calc would read as "wrong" under that
+mechanism. Abandoned before building anything further.
+
+**What got built instead, grounded in an already-known real bug**
+(project-memory follow-up #5, `scratch/calc_review_note_F12-04-233.md`):
+this firm's calc sheets open each sizing block with a line like `Pump
+Reference SMP-01` or `DHWC Reference DHWC-1` — a `"<Type> Reference
+<TAG>"` declaration. The manual review had already found F12-04-233's
+calc reusing the tag `SMP-01` for two unrelated sump-pump blocks. Checked
+directly against the real extracted text and confirmed: the first block
+states `Qin = 0.189274448 L/s`, the second (which should have been
+`SMP-02`) states `Qin = 1.083333333 L/s` — an 82% disagreement for what
+the document claims is the same pump. That's the shape sub-check #6
+checks for generically: attribute every labeled value to the nearest
+preceding tag declaration, group by tag, flag when one tag's values for
+the same label disagree beyond a tolerance.
+
+**`CalcConsistencyRules.xlsx`** (`docs/excel_templates/CalcConsistencyRules.xlsx`):
+`Value Label | Tolerance (%) | Notes | Active (Y/N)`. `Value Label` is
+`|`-separated alternatives (same convention as `LoadCalcChecklist.xlsx`'s
+`Keywords`), since the same concept gets phrased differently across real
+calc sheets — `Total Dynamic Head|TOTAL HEAD LOSS|Total Head Loss` covers
+the general industry term plus F12-04-233's and Obaidat Villa's own real
+phrasings, discovered the same way §22 discovered the `LoadCalcChecklist`
+phrasing gaps.
+
+**The check** (`checks/code_compliance_calc_consistency.py`, id
+`calc_consistency_check`) finds every `"<...> Reference <TAG>"`
+declaration in the calc text, then for each active rule's keyword
+alternatives, finds every occurrence and reads the next number within a
+40-character window, attributing it to the most recently preceding tag
+declaration. A tag with 2+ values for the same rule where
+`(max-min)/max(abs(values)) * 100 > tolerance_pct` → **FAIL**. Values
+before any tag declaration, or a tag appearing only once, are silently
+skipped (nothing to compare). Keyword matching uses a **leading word
+boundary** (`\bkeyword`, not a trailing one — a keyword like `"Qin ="`
+ends in a non-word character, where a trailing `\b` would never match) —
+this was a real bug caught during testing: without it, a `"Flow Rate"`
+keyword matched inside `"Inflow Rate"`, since plain substring search
+doesn't respect word edges.
+
+**A second real false positive found during testing, this time not a
+code bug but a genuine keyword-ambiguity problem:** a `"Flow Rate"` rule
+was tried, reasoning it would catch the same class of bug as `Qin =`.
+Tested against F12-04-233 and it fired on `DHWC-1` — but not from a
+reused tag: the DHW-cylinder calc block legitimately contains *multiple
+different* "Flow Rate"-labeled quantities (`Total Flow Rate (L/hr) 38`,
+a per-fixture-type subtotal, and `Total Hot Water Flow Rate (L/hr)
+425.6`, the grand total) that both happen to end in the substring "Flow
+Rate". A real, correct calc flagged as a false 91% disagreement. Left
+**inactive** in the shipped table with the finding documented in its own
+Notes cell, rather than guessing a narrower keyword untested against real
+data — same "leave it inactive rather than fabricate confidence"
+convention already used for several `VelocityLimits.xlsx`/
+`LoadCalcChecklist.xlsx` rows.
+
+Wired into the CLI as `--calc-consistency-excel`, sharing `--calc-file`
+with `load_calc_check` (requires `--calc-file`; `--calc-file` itself now
+requires *either* `--calc-checklist-excel` or `--calc-consistency-excel`,
+not strictly the checklist alone as before). Writes into the shared
+`CodeCompliance` sheet — registered in `report/workbook_builder.py`'s
+`_SHEET_FOR_CHECK` map and in `test_report_workbook_builder.py`'s
+regression guard from the start this time (§21 already found that bug
+once for `manhole_check`; no reason to repeat it a third time). 13 new
+tests (117 total, all passing).
+
+**Passed real acceptance tests on both projects already used for Phase 2
+rollout-testing.** F12-04-233 (with only the two active rules,
+`Qin =` and the head-loss alternatives): **exactly 1 FAIL** — the known
+`SMP-01` bug, cleanly isolated with zero other findings after the
+word-boundary fix and the `Flow Rate` deactivation. F-04-00-130 Eng.
+Obaidat Villa (§22's second rollout-test project): **0 findings** — no
+false positives on an independent real calc document either. Full CLI
+run against F12-04-233 (all six Phase 2 sub-checks together): **255 FAIL
+/ 919 WARN / 0 INFO** — exactly the prior baseline (254, §22) plus this
+one new finding, confirming zero regression anywhere else.
+**Calc internal-consistency check (Phase 2 sub-check #6) is now
+rollout-ready.**

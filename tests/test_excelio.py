@@ -5,6 +5,7 @@ from fncsqaqc.excelio.common import ExcelSchemaError
 from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.layer_list import load_layer_standard
+from fncsqaqc.excelio.calc_consistency_rules import load_calc_consistency_rules
 from fncsqaqc.excelio.load_calc_checklist import load_load_calc_checklist
 from fncsqaqc.excelio.manhole_size_limits import load_manhole_size_limits
 from fncsqaqc.excelio.sizing_summary import (
@@ -278,3 +279,35 @@ def test_load_load_calc_checklist_missing_column_raises(tmp_path):
 
     with pytest.raises(ExcelSchemaError):
         load_load_calc_checklist(path)
+
+
+def test_load_calc_consistency_rules_valid(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "CalcConsistencyRules"
+    ws.append(["Value Label", "Tolerance (%)", "Notes", "Active (Y/N)"])
+    ws.append(["Qin =", 5, "", "Y"])
+    ws.append(["Flow Rate", None, "defaults to 5%", "N"])
+    path = tmp_path / "consistency_rules.xlsx"
+    wb.save(path)
+
+    rules = load_calc_consistency_rules(path)
+    assert len(rules) == 2
+    qin = next(r for r in rules if r.value_label == "Qin =")
+    assert qin.tolerance_pct == 5.0
+    assert qin.active is True
+    flow = next(r for r in rules if r.value_label == "Flow Rate")
+    assert flow.tolerance_pct == 5.0  # blank -> default
+    assert flow.active is False
+
+
+def test_load_calc_consistency_rules_missing_column_raises(tmp_path):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "CalcConsistencyRules"
+    ws.append(["Tolerance (%)"])  # missing Value Label
+    path = tmp_path / "bad_rules.xlsx"
+    wb.save(path)
+
+    with pytest.raises(ExcelSchemaError):
+        load_calc_consistency_rules(path)

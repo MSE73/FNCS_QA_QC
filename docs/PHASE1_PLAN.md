@@ -279,6 +279,7 @@ different mechanisms — this is not one check, it's a basket:**
 | 3 | Equipment sizing vs. calc | Sizing-summary Excel (calc-required vs. installed capacity), tag-matched | N/A (comparison, not a code table) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §19)** |
 | 4 | Manhole sizing | Sizing-summary Excel (chamber size + depth) vs. min-size-by-depth table | Decided (UK Approved Document H, Table 11) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §20)** |
 | 5 | Load calc presence/completeness | Text/keyword search over the calc PDF/Excel itself — no drawing side at all | N/A (checklist, not numeric) | **Done — passed F12-04-233 acceptance test (`docs/PROCEDURE.md` §21)** |
+| 6 | Calc internal numeric consistency | Same-tag value disagreement scan over the calc text — added after the original 5, not in the user's original basket | N/A (compares the calc against itself, not a code table) | **Done — passed F12-04-233 + Obaidat Villa acceptance tests (`docs/PROCEDURE.md` §23)** |
 
 **Why these five and not others:** this is the breakdown the user gave
 directly (load, equipment sizing, duct/pipe sizing, manholes, levels) —

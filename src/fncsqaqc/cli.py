@@ -11,6 +11,7 @@ import click
 from fncsqaqc.calcdoc.extract import UnsupportedCalcFileError, extract_text
 from fncsqaqc.checks.registry import CHECKS
 from fncsqaqc.config import OdaNotFoundError, resolve_config
+from fncsqaqc.excelio.calc_consistency_rules import load_calc_consistency_rules
 from fncsqaqc.excelio.deliverables_list import load_deliverables
 from fncsqaqc.excelio.drainage_slope_limits import load_drainage_slope_limits
 from fncsqaqc.excelio.drawings_list import load_drawings_list
@@ -95,13 +96,21 @@ def cli() -> None:
     "--calc-file",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     default=None,
-    help="Per-project calc source document (.pdf or .xlsx/.xlsm). Requires --calc-checklist-excel.",
+    help="Per-project calc source document (.pdf or .xlsx/.xlsm). Requires --calc-checklist-excel "
+    "and/or --calc-consistency-excel.",
 )
 @click.option(
     "--calc-checklist-excel",
     type=click.Path(exists=True, dir_okay=False, path_type=Path),
     default=None,
     help="Firm-wide load-calc completeness checklist (docs/excel_templates/LoadCalcChecklist.xlsx).",
+)
+@click.option(
+    "--calc-consistency-excel",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help="Firm-wide calc internal-consistency ruleset "
+    "(docs/excel_templates/CalcConsistencyRules.xlsx). Requires --calc-file.",
 )
 @click.option("--disable-check", "disabled_checks", multiple=True, help="Disable a check by id (repeatable).")
 @click.option(
@@ -132,6 +141,7 @@ def check(
     manhole_limits_excel: Path | None,
     calc_file: Path | None,
     calc_checklist_excel: Path | None,
+    calc_consistency_excel: Path | None,
     disabled_checks: tuple[str, ...],
     fail_on: str,
     verbose: bool,
@@ -161,9 +171,14 @@ def check(
         raise click.BadParameter(
             "--manhole-excel requires --manhole-limits-excel", param_hint="--manhole-limits-excel"
         )
-    if calc_file and not calc_checklist_excel:
+    if calc_file and not (calc_checklist_excel or calc_consistency_excel):
         raise click.BadParameter(
-            "--calc-file requires --calc-checklist-excel", param_hint="--calc-checklist-excel"
+            "--calc-file requires --calc-checklist-excel and/or --calc-consistency-excel",
+            param_hint="--calc-checklist-excel",
+        )
+    if calc_consistency_excel and not calc_file:
+        raise click.BadParameter(
+            "--calc-consistency-excel requires --calc-file", param_hint="--calc-file"
         )
 
     app_config = resolve_config(
@@ -183,6 +198,9 @@ def check(
     manhole_sizing = load_manhole_sizing(manhole_excel) if manhole_excel else []
     manhole_limits = load_manhole_size_limits(manhole_limits_excel) if manhole_limits_excel else []
     load_calc_checklist = load_load_calc_checklist(calc_checklist_excel) if calc_checklist_excel else []
+    calc_consistency_rules = (
+        load_calc_consistency_rules(calc_consistency_excel) if calc_consistency_excel else []
+    )
     calc_text = ""
     if calc_file:
         try:
@@ -212,6 +230,7 @@ def check(
         manhole_limits=manhole_limits,
         calc_text=calc_text,
         load_calc_checklist=load_calc_checklist,
+        calc_consistency_rules=calc_consistency_rules,
     )
 
     try:

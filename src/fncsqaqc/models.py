@@ -250,6 +250,25 @@ class LoadCalcChecklistItem:
 
 
 @dataclass(frozen=True)
+class CalcConsistencyRule:
+    """One row of the firm-wide calc internal-consistency ruleset
+    (CalcConsistencyRules.xlsx) -- see docs/PROCEDURE.md #23 for sourcing.
+    Phase 2 sub-check #6: does NOT re-derive or verify the load numbers
+    themselves (same non-goal as load_calc_check, #5) -- only checks
+    whether the SAME equipment tag (a "<...> Reference <TAG>" block, this
+    firm's own calc-sheet convention) states a DIFFERENT value for the
+    same labeled field in two places within one calc document. Grounded
+    in a real bug found by manual review: F12-04-233's calc reused the
+    "SMP-01" tag for two unrelated pump-sizing blocks with two different
+    "Qin =" values."""
+
+    value_label: str  # "|"-separated alternatives, any one match is scanned
+    tolerance_pct: float = 5.0
+    notes: str = ""
+    active: bool = True
+
+
+@dataclass(frozen=True)
 class EquipmentSizingRow:
     """One row of the per-project sizing-summary workbook's EquipmentSizing
     sheet -- manual comparison of a calc's required value against what's
