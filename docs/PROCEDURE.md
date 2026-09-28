@@ -990,3 +990,66 @@ F12-04-233 acceptance tests.** Velocity (§17), slope (§18), equipment
 sizing (§19), manholes (§20), load-calc presence (§21). The Phase 2
 technical-audit basket scoped in project-memory follow-up #16 is
 complete.
+
+## 22. Second real project rollout-tested; `LoadCalcChecklist.xlsx` broadened (2026-09-28)
+
+Ran the full tool (Phase 1 + all 5 Phase 2 sub-checks) against a second
+real, unrelated project — **F-04-00-130 Eng. Obaidat Villa**, distinct
+from F12-04-233, which every prior acceptance test above used — to get an
+unbiased check of both the tool and the Rev 2 SOP (§5a/§6a). Materials
+(`Deliverables.xlsx`, `DrawingsList.xlsx`, real-data `SizingSummary.xlsx`,
+`INSTRUCTIONS.md`) built in `scratch/rollout_test_obaidat/` (gitignored,
+real-project data, same convention as every other scratch artifact in
+this file) for a junior engineer to actually run and give feedback on.
+
+**This project's raw DXF units are millimeters** — confirmed independently
+(a repeated small symbol's circle radius of ~35 raw units is a plausible
+~35mm marker, an impossible 35m one) — the *opposite* convention from
+F12-04-233's meters. A reminder that this is a per-drawing/per-firm-era
+fact to check each time, not something to assume carries over between
+projects.
+
+**Real run: 662 FAIL / 5536 WARN / 0 INFO.** Two genuinely new findings
+Phase 2 hadn't exercised before:
+
+- **Manholes: 10 real FAILs.** Every manhole on this project deeper than
+  1.2m is still built at 600×600mm, the same size as the shallow ones —
+  but `ManholeSizeLimits.xlsx`'s deep tier (§20) requires 675mm+. F12-04-233's
+  manholes were all shallow, so this is the first real project to actually
+  exercise that tier, and it looks like a real, consistent design habit at
+  this firm worth a second look, not a data-entry mistake. Also 1 WARN
+  (`RMH-05`: a real schedule row with a positive invert level and negative
+  depth, every other row has the opposite sign — a genuine schedule typo,
+  correctly caught rather than silently corrected).
+- **Load-calc presence surfaced two `LoadCalcChecklist.xlsx` items that
+  didn't generalize past the one project the checklist was built from**:
+  `Pump Head and Flow`'s keywords (`Pump Duty Calculation|Total Dynamic
+  Head|Pump Head`) didn't match this project's real, complete pump calcs,
+  which label the result `Total Head Loss` instead — a pure phrasing
+  difference, not a missing calc. **Fixed** by adding `Total Head Loss` as
+  a fourth keyword alternative; re-verified against F12-04-233 afterward
+  (still exactly the same 4 findings, no regression) and Obaidat Villa
+  (this false negative is gone). Separately, `Sump Pit and Pump Calc`'s
+  single keyword (`Sump Pit`) couldn't recognize this project's Sewage
+  Treatment Plant (`STP-01`, a legitimate alternative design choice, not a
+  gap) — **fixed** by renaming the item to `Sump Pit and Pump Calc, or STP
+  Calc` (category renamed `Sewage Handling Sizing`) and widening keywords
+  to `Sump Pit|Sewage Treatment Plant|STP`.
+
+**That second fix did NOT clear the FAIL on Obaidat Villa, and it
+shouldn't have** — checked directly: neither "STP," "Sewage Treatment,"
+nor "Sump" appears anywhere in this project's real calc PDF text at all.
+The drawing has an `STP-01` tag, but the calc package itself documents no
+sewage-handling sizing calc of either kind. That's a genuine finding
+(the same class of gap as F12-04-233's Tank Capacity Derivation — real,
+not a tool artifact), not a checklist bug — the keyword fix was still
+correct so a *future* project whose calc actually contains an STP sizing
+section gets recognized, it simply doesn't apply retroactively to a
+document that never had the content at all.
+
+**Takeaway for the checklist's ongoing maintenance:** `LoadCalcChecklist.xlsx`,
+like the velocity/slope/manhole reference tables, is a living firm-wide
+input, not a one-time artifact — expect a second (and third, ...) real
+project to surface more phrasing/design-choice gaps like these two, and
+widen keywords (or add conditional rows) the same way, rather than
+treating F12-04-233's original manual review as the final word.
