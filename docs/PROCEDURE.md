@@ -235,6 +235,7 @@ blocks, and there is no strict current standard to check against.
 | 0 | 2026-09-10 | Initial issue — Phase 1 (drawing cleanliness + folder/deliverables completeness) |
 | 1 | 2026-09-12 | Real-folder acceptance test run against a live submission (F12-04-233 Bashar Villa, Mechanical Package). Found and fixed a crash on AutoCAD extension entities (e.g. `ARCALIGNEDTEXT`) in the purge/reference scanner. Also surfaced a firm-wide layer-naming drift, resolved same day — see §11. |
 | 2 | 2026-09-27 | Phase 2 (code-compliance technical audit) rollout: all five sub-checks (§5a) built and passed real F12-04-233 acceptance tests (§17-§21). §2, §5a (new), §6a (new), §7, §8, §9 updated to cover the new opt-in flags, inputs, and troubleshooting. |
+| — | 2026-10-13 | Checked `Codes/plumbing_Code.pdf` (real Jordanian plumbing code) against the three unconfirmed Phase 2 reference tables (§5a). Domestic water velocity: resolved — `VelocityLimits.xlsx` cold-water max updated 2.4→2.5 m/s to match confirmed code text; hot-water row already matched. Drainage minimum slope: found a real basis conflict (flat 2%/1% UPC-style rule vs. the table's IPC-704.1 diameter-tiered values) — logged in §24 for senior review, no file change made pending that decision. Manhole sizing: code has no sizing table; §5a caveat unaffected. |
 
 ## 11. Resolved: mechanical layer naming standard (2026-09-12)
 
@@ -1155,3 +1156,56 @@ run against F12-04-233 (all six Phase 2 sub-checks together): **255 FAIL
 one new finding, confirming zero regression anywhere else.
 **Calc internal-consistency check (Phase 2 sub-check #6) is now
 rollout-ready.**
+
+## 24. Found (not yet resolved): drainage slope basis conflicts with the real Jordanian code (2026-10-13)
+
+The user supplied the actual Jordanian plumbing code (`Codes/plumbing_Code.pdf`
+— "الكودة الموحدة لتزويد المباني بالمياه والصرف الصحي", 1st ed. 2013, explicitly
+derived from the **Uniform Plumbing Code**, not the IPC — see its own §ح/1
+sourcing appendix). Checked it against the three Phase 2 reference tables
+flagged in §5a as not independently confirmed against Jordanian code text.
+Two results, one resolved and one still open:
+
+**Resolved — domestic water velocity.** The code states explicitly (§6.10.12
+"تحديد المقاس للسرعة"): max 2.5 m/s cold water, max 1.5 m/s hot water, for
+copper pipe/fittings and for non-copper pipe using copper-alloy fittings.
+`VelocityLimits.xlsx`'s hot-water row (1.5 m/s) already matched exactly; the
+cold-water row (2.4 m/s, ASPE/IPC-sourced) has been updated to 2.5 m/s and
+its Code Basis/Notes now cite this document directly. Drainage(gravity)'s
+0.6 m/s minimum and the fire rows are untouched — this code doesn't speak to
+either (gravity drainage here is slope-governed, not velocity-governed; fire
+flow isn't in scope of a water-supply/sanitary-drainage code).
+
+**Still open — drainage minimum slope, a basis conflict, not just an
+unconfirmed value.** `DrainageSlopeLimits.xlsx` uses IPC Table 704.1
+(diameter-tiered: 2.08% / 1.04% / 0.52% for ≤65mm / 66-150mm / ≥151mm — see
+§18). The Jordanian code instead uses the UPC approach (§8/7 "ميل شبكة
+أنابيب الصرف الأفقية", Horizontal Drainage Piping Slope): a **flat 2%
+minimum** for all horizontal drainage piping, with a conditional drop to
+**1%** allowed only for pipes ≥100mm/4", and only with prior approval from
+the authority having jurisdiction. This is a different *structure*, not
+just different numbers — for pipes under 4" the Jordanian rule (2% flat, no
+exception) is stricter than the table's current 1.04% for DN65–150mm.
+Adopting it as-is would also be awkward to automate cleanly: the 1%
+exception is conditioned on a case-by-case "prior approval," which an
+unattended check can't evaluate the way it evaluates a fixed diameter
+threshold.
+
+**Deliberately not changed `DrainageSlopeLimits.xlsx` or `slope_check` for
+this** — per the user's direction, this is being logged here for senior
+review rather than applied unilaterally, since it would shift which rows
+in every future project's `CodeCompliance` sheet FAIL vs. pass. Whoever
+reviews it next should decide: adopt Jordan's flat 2%/1% rule outright
+(accepting that the ≥100mm "with approval" exception either becomes an
+unconditional 1% floor or gets dropped), keep the current IPC-704.1 table
+on the reasoning that it's the stricter and therefore safer default for
+most residential-scale pipe sizes, or encode both and let the user pick a
+basis at runtime. No `VelocityLimits.xlsx`/`DrainageSlopeLimits.xlsx` edit
+has been made for the slope question.
+
+**Also checked and ruled out:** this code has no manhole/inspection-chamber
+diameter-vs-flow sizing table (only a spacing rule — max 90m between
+manholes) — `ManholeSizeLimits.xlsx`'s UK Approved Document H caveat (§5a)
+is unaffected either way. Equipment-sizing-vs-calc, load-calc presence, and
+calc consistency are unaffected since those compare a project against its
+own data, not against this code.
