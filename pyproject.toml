@@ -23,6 +23,7 @@ dev = [
 
 [project.scripts]
 fncsqaqc = "fncsqaqc.cli:main"
+fncsqaqc-gui = "fncsqaqc.gui:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/fncsqaqc"]

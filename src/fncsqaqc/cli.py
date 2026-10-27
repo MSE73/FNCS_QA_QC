@@ -260,6 +260,14 @@ def _determine_exit_code(result, fail_on: str) -> int:
     return 0
 
 
+@cli.command()
+def gui() -> None:
+    """Launch the desktop GUI front-end."""
+    from fncsqaqc.gui import main as gui_main
+
+    gui_main()
+
+
 def main() -> None:
     cli()
 

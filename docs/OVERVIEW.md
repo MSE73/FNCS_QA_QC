@@ -18,7 +18,20 @@ client or to senior sign-off. It checks two kinds of things:
    velocity, drainage minimum slope, equipment sizing vs. the calc,
    manhole sizing, and whether the load calc covers everything it should
    — each checked against either a firm-wide reference table (code-based
-   limits) or the project's own calc document.
+   limits) or the project's own calc document. Domestic water velocity
+   limits are now confirmed against the real Jordanian plumbing code
+   (`Codes/plumbing_Code.pdf`); drainage minimum slope has a known basis
+   conflict against that same code, pending a senior decision — see
+   `docs/PROCEDURE.md` §24.
+
+## Running it
+
+Either the command line (`fncsqaqc check ...`, see `README.md`) or the
+desktop GUI (`fncsqaqc gui`, or the `fncsqaqc-gui` shortcut) — same checks,
+same report, the GUI just wraps the CLI with file pickers, a live output
+log, and an "Open report" button. The GUI remembers the firm-wide
+reference files (layer standard, limit tables, checklists) between runs,
+so only the per-project inputs need re-picking each time.
 
 ## How it works, step by step
 
