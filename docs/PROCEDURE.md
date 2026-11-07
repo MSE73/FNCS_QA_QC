@@ -236,6 +236,7 @@ blocks, and there is no strict current standard to check against.
 | 1 | 2026-09-12 | Real-folder acceptance test run against a live submission (F12-04-233 Bashar Villa, Mechanical Package). Found and fixed a crash on AutoCAD extension entities (e.g. `ARCALIGNEDTEXT`) in the purge/reference scanner. Also surfaced a firm-wide layer-naming drift, resolved same day — see §11. |
 | 2 | 2026-09-27 | Phase 2 (code-compliance technical audit) rollout: all five sub-checks (§5a) built and passed real F12-04-233 acceptance tests (§17-§21). §2, §5a (new), §6a (new), §7, §8, §9 updated to cover the new opt-in flags, inputs, and troubleshooting. |
 | — | 2026-10-13 | Checked `Codes/plumbing_Code.pdf` (real Jordanian plumbing code) against the three unconfirmed Phase 2 reference tables (§5a). Domestic water velocity: resolved — `VelocityLimits.xlsx` cold-water max updated 2.4→2.5 m/s to match confirmed code text; hot-water row already matched. Drainage minimum slope: found a real basis conflict (flat 2%/1% UPC-style rule vs. the table's IPC-704.1 diameter-tiered values) — logged in §24 for senior review, no file change made pending that decision. Manhole sizing: code has no sizing table; §5a caveat unaffected. |
+| — | 2026-11-07 | Checked `Codes/HVAC_Code.pdf`, `Codes/Firefighting_Code.pdf`, and `Codes/fire code.pdf` (real Jordanian HVAC and fire codes) against the remaining unconfirmed duct/fire rows in `VelocityLimits.xlsx` (§5a) — see §25. Duct/Supply confirmed (8 m/s, cited directly); Duct/Fresh-Outside Air corrected (2.5→2.5-4.5 m/s); Duct/Return and Duct/Exhaust have no Jordanian-code value to confirm against (genuine gap, placeholders stand). All four fire rows: neither fire code tabulates pipe velocity at all (sized by flow/pressure instead) — no change, but Fire - Hose Reel's Code Basis (BS EN 671) was flagged as a mismatch against what the Jordanian code actually models it on (NFPA 14 Class II/III) for senior review. |
 
 ## 11. Resolved: mechanical layer naming standard (2026-09-12)
 
@@ -1209,3 +1210,77 @@ manholes) — `ManholeSizeLimits.xlsx`'s UK Approved Document H caveat (§5a)
 is unaffected either way. Equipment-sizing-vs-calc, load-calc presence, and
 calc consistency are unaffected since those compare a project against its
 own data, not against this code.
+
+## 25. Checked three more real Jordanian codes against `VelocityLimits.xlsx`'s remaining unconfirmed rows (2026-11-07)
+
+The user added three more real code documents to `Codes/`: `HVAC_Code.pdf`
+(Jordanian National Building Code Vol.24 Part 2 — Mechanical Ventilation &
+A/C Code, Arabic, 239 pages, has a text layer), `Firefighting_Code.pdf`
+(Jordan's "Code of Firefighting Systems," 1st ed. 2004, Arabic, 17 pages,
+scanned/image-only — a non-sequential excerpt of selected chapters, not the
+full document), and `fire code.pdf` (Jordan's "Fire Prevention Code," 3rd
+ed. 2022, Arabic, 269 pages, scanned/image-only — a life-safety/occupancy
+code, structurally parallel to NFPA 101, not a hydraulic-design code).
+Checked all three against the duct and fire rows in `VelocityLimits.xlsx`
+flagged in §5a as ASHRAE/SMACNA/NFPA-sourced placeholders, the same exercise
+as §24 did for the plumbing code.
+
+**Duct/Supply, max 8 m/s — confirmed, cited directly.** HVAC_Code.pdf's
+Table 12 (§5/3/2, printed p.87-88, "السرعات الموصى بها في أقنية الهواء" —
+recommended air duct velocities) gives 5-8 m/s for main ducts in public/
+office buildings — matches the existing ASHRAE-sourced ceiling exactly.
+Code Basis/Notes updated to cite the table directly; no numeric change.
+
+**Duct/Fresh-Outside Air, corrected 2.5→2.5-4.5 m/s.** The same Table 12
+gives outside-air intakes a 2.5-4.5 m/s range for public/office buildings
+(5-6 m/s industrial, not split out as its own row here), not a single 2.5
+m/s ceiling as the prior ASHRAE louver-guidance placeholder had it. Updated
+`VelocityLimits.xlsx` to min 2.5 / max 4.5 m/s, cited to Table 12 directly.
+
+**Duct/Return and Duct/Exhaust — not found, placeholders stand.** Table 12
+only tabulates the supply-air path (intake → air washer → heater/fan
+connector → main duct → branch duct → supply grille); there is no separate
+return-duct or exhaust-duct velocity entry anywhere in the 239-page
+document (the only return-side figure found, §5/3/15(ح) p.103-104, is an
+occupied-space comfort criterion — air velocity near the return grille
+≤0.2 m/s — not a return-*duct* velocity, and was correctly not conflated
+with it). This is a genuine gap in the Jordanian code, not an extraction
+failure — the existing ASHRAE-sourced 4 m/s (return) and 8 m/s (exhaust,
+by analogy to supply) rows are unchanged.
+
+**All four fire rows — not found, no file change.** Neither fire PDF
+tabulates pipe velocity at all; both size standpipe/hose systems by
+diameter, flow (L/min), and pressure (bar) instead — e.g.
+`Firefighting_Code.pdf` Ch.4 (§6/4, tables 14-17, pp.34-38) gives standpipe
+flow by hazard class (946-1892 L/min) and pressure, never a velocity
+figure, and neither PDF contains a fire-pump or sprinkler chapter at all
+(the 17-page firefighting excerpt is non-sequential — it skips from the
+water-supply-source chapter straight to the end, so a pump/sprinkler
+chapter may exist in the full original document but wasn't in what was
+scanned). `fire code.pdf` only cross-references back to the firefighting-
+systems code for design values (confirmed directly at p.13-6, §6/3/6) and
+has no hydraulic tables of its own. Both documents' numbers that *are*
+present are metric conversions of NFPA figures (e.g. 12.10 bar = exactly
+175 psi, NFPA 14), consistent with — not independently contradicting — the
+existing NFPA 14/NFPA 20-sourced rows. No change made to Fire - Standpipe/
+Hydrant, Fire - Pump Suction, or Fire - Sprinkler/Deluge.
+
+**One basis mismatch flagged for senior review, not applied unilaterally
+(same posture as §24's slope conflict).** Fire - Hose Reel's current Code
+Basis cites BS EN 671, but the Jordanian code doesn't reference that
+standard at all — it folds occupant hose stations into the same Chapter 4
+"Standpipe and Hose System" as a 40mm (or 19/25mm) fabric-hose class, sized
+by minimum flow (379 L/min for 40mm, 60 L/min for 19/25mm, §11/6/4) and
+modeled on NFPA 14's Class II/III hose system, not EN 671. No velocity
+number was found either way, so the row is left as-is (still inactive,
+no limit set) — but whoever next reviews fire rows should swap the Code
+Basis reference from BS EN 671 to NFPA 14 Class II/III if/when a velocity
+figure is sourced, rather than continuing to cite a standard this firm's
+own governing code doesn't use.
+
+**If a complete answer for Fire - Pump Suction or Fire - Sprinkler/Deluge
+is ever needed:** source the full 2004 "Code of Firefighting Systems" (or
+a later edition, if one exists) — this 17-page excerpt's missing
+chapters are the likely place NFPA 20/13-equivalent values would live, not
+the 2022 Fire Prevention Code, which structurally doesn't cover hydraulic
+design at all.

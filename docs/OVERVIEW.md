@@ -18,11 +18,15 @@ client or to senior sign-off. It checks two kinds of things:
    velocity, drainage minimum slope, equipment sizing vs. the calc,
    manhole sizing, and whether the load calc covers everything it should
    — each checked against either a firm-wide reference table (code-based
-   limits) or the project's own calc document. Domestic water velocity
-   limits are now confirmed against the real Jordanian plumbing code
-   (`Codes/plumbing_Code.pdf`); drainage minimum slope has a known basis
-   conflict against that same code, pending a senior decision — see
-   `docs/PROCEDURE.md` §24.
+   limits) or the project's own calc document. Domestic water and duct
+   supply/outside-air velocity limits are now confirmed (and one
+   corrected) against the real Jordanian plumbing and HVAC codes
+   (`Codes/plumbing_Code.pdf`, `Codes/HVAC_Code.pdf`); drainage minimum
+   slope has a known basis conflict against the plumbing code, pending a
+   senior decision — see `docs/PROCEDURE.md` §24. Duct return/exhaust and
+   all fire velocity rows remain unconfirmed placeholders — the Jordanian
+   HVAC and fire codes checked against them (`Codes/Firefighting_Code.pdf`,
+   `Codes/fire code.pdf`) simply don't tabulate those values — see §25.
 
 ## Running it
 
