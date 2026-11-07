@@ -1309,3 +1309,52 @@ match "Code of Firefighting Systems" and its edition/year couldn't be
 confirmed, so it is **not** being treated as a verified source — logging
 it here rather than citing it. Fire - Pump Suction and Fire - Sprinkler/
 Deluge remain unconfirmed placeholders; no `VelocityLimits.xlsx` change.
+
+## 26. Checked `Firefighting_Code.pdf`/`fire code.pdf` for anything beyond velocity (2026-11-07)
+
+§25 only checked the two fire PDFs against `VelocityLimits.xlsx`. Went back
+and read `Firefighting_Code.pdf` in full (all 17 pages) and sampled several
+chapters of `fire code.pdf` (front matter, full table of contents, Ch.4
+fire separation, Ch.5 Electrical & Mechanical Services in full, Ch.6 Places
+of Assembly including its extinguishing-requirements clause — roughly 240
+of 269 pages not opened; early sampling confirmed the cross-reference
+pattern held throughout, same as §25 found, so further occupancy chapters
+weren't worth the read) for anything relevant to the tool's other reference
+tables/checks.
+
+**Found and applied — fire-water reserve basis for `LoadCalcChecklist.xlsx`.**
+`Firefighting_Code.pdf` Ch.5, Table 19 (§8/5, p.52) gives required external-
+hydrant-network flow duration by hazard class: Low 30 min @ 946 L/min,
+Ordinary 60 min @ 946 L/min, High 90 min @ 1890 L/min (implied reserve
+volumes ≈28.4/56.8/170.1 m³) — applicable when the site is within 10 km of
+a Civil Defense station, otherwise the competent authority sets the
+duration. This is exactly the basis the "Water Storage Sizing" / "Tank
+Capacity Derivation" item's existing "...or fire reserve" note was
+anticipating but had no sourced number for — added to that row's Notes in
+`LoadCalcChecklist.xlsx` as reference info for a reviewer. The checklist
+item itself is unchanged: still presence-only (checks that a derivation
+section exists, not that its number matches this basis).
+
+**Found, not yet actioned — three possible new checklist/reference items,
+logged for senior review rather than built unilaterally (same posture as
+§24/§25):**
+- **Hydrant/external-network spacing and sizing** (`Firefighting_Code.pdf`
+  Ch.5, p.49 Figs.2-3, p.52 §3/8/5, p.53): max 70m building-entrance-to-
+  nearest-hydrant, max 150m between adjacent hydrants, pillar hydrant
+  height 457mm above grade, main feeder pipe min 150mm (reducible to
+  100mm with supporting hydraulic calc), min residual nozzle pressure
+  3.5 bar. No existing check covers site/external fire-water network
+  layout — would be new scope, not a fit for any current reference table.
+- **Portable extinguisher count/spacing** (`Firefighting_Code.pdf` p.9
+  §8/1/2): minimum 2 extinguishers per fire compartment regardless of
+  area, max 22m travel distance to one. Same situation — no existing
+  check covers extinguisher placement.
+- **Fuel-tank secondary containment** (`fire code.pdf` §7/4/5): bunding
+  capacity ≥110% of the largest tank's capacity; fuel-tank room
+  ventilation opening ≥2.5% of room floor area. Tangential to generator/
+  fuel-system drawings, not covered by any current check.
+
+None of these three were built — they'd each need their own new check
+and reference table (same category of decision as §24's slope basis
+conflict), not a fit for an existing file to just edit. No file changed
+for these three; only `LoadCalcChecklist.xlsx`'s note was updated.
