@@ -1284,3 +1284,28 @@ a later edition, if one exists) — this 17-page excerpt's missing
 chapters are the likely place NFPA 20/13-equivalent values would live, not
 the 2022 Fire Prevention Code, which structurally doesn't cover hydraulic
 design at all.
+
+**Follow-up attempt (2026-11-07) to source that full document — still
+unconfirmed, no file change.** Tried to locate the complete "Code of
+Firefighting Systems" online. The two obvious official sources — the
+Jordan National Building Council site and the Jordan Engineers
+Association's code listing — were both unreachable (the former loops on
+redirects, the latter's server refused the connection); one search result
+indicates a PDF copy has to be requested directly from JNBC's office
+inside the Ministry of Public Works and Housing, i.e. it isn't freely
+published online. Did find and read a different, undated edition of the
+"Fire Prevention Code" (hosted by a university repository, not an
+official JNBC/government mirror) that — unlike the 2022 edition — embeds
+its own pump (§6/4/1-و) and automatic-sprinkler (§6/4/2) clauses instead
+of cross-referencing out. Read both: the pump clause only covers
+pump-room fire rating, independent electrical supply, and automatic/
+manual control — no suction pipe sizing or velocity; the sprinkler clause
+just requires installation to NFPA 13 or the equivalent British standard
+plus heat-detector/supervisory requirements — explicitly hydraulic-calc-
+governed, no fixed velocity, matching NFPA 13 itself. This is suggestive
+(even a version of the Jordanian code with the actual pump/sprinkler
+clauses present still states no velocity figure) but its title doesn't
+match "Code of Firefighting Systems" and its edition/year couldn't be
+confirmed, so it is **not** being treated as a verified source — logging
+it here rather than citing it. Fire - Pump Suction and Fire - Sprinkler/
+Deluge remain unconfirmed placeholders; no `VelocityLimits.xlsx` change.
