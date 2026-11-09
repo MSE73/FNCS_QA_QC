@@ -1425,3 +1425,27 @@ Notes-only corroboration, no schema/logic change (same low-risk posture as
 All four logged in `docs/PHASE1_PLAN.md`'s deferred list and project
 memory; none built this session. 117 tests still pass (notes-only
 changes, no check logic touched).
+
+**Follow-up check (2026-11-10): does the master AutoCAD template need
+updating too?** No — `MECHANICAL STANDARD.dwg` (the real master, in
+`MEP - Sharing\CAD Standard\`) still exactly matches the hyphenated
+naming + recolored layers synced in §11-§14 (confirmed by converting it
+and diffing its layer table against `FNCS_CAD_Layers.ods`), and none of
+today's 5 new PDFs contain any layer-naming/color/drafting-standard
+content to update it against anyway (they're all HVAC/plumbing/electrical
+*design parameter* guides, not drafting standards).
+
+**However, found a real risk unrelated to the PDFs:** two stale copies
+sit in the same folder as the real master — `MECHANICAL STANDARD-01.dwg`
+(modified Oct 7 2026, a month *after* the Sep sync) and
+`MECHANICAL STANDARD - Copy.dwg` (modified Mar 18 2026). Both are empty
+seed templates (0 modelspace entities, confirmed via ODA+ezdxf, same as
+the real master) but both still carry the **pre-rename underscore layer
+names** (`M_CONT_2_EQUP` etc.) and **pre-recolor ACI colors** on all 117
+plumbing/fire pipe layers from the September color pass. `-01`'s
+modification date being after the sync means someone touched/resaved it
+since — if a drafter ever opens `-01` or `Copy` instead of the real
+master to start a project, they'd silently inherit the old
+naming/color standard again. **User decision (2026-11-10): leave the
+files alone, just flag the risk** — not touched, since they live outside
+the repo in a shared folder.
