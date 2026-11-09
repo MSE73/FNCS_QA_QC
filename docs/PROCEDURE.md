@@ -237,6 +237,7 @@ blocks, and there is no strict current standard to check against.
 | 2 | 2026-09-27 | Phase 2 (code-compliance technical audit) rollout: all five sub-checks (§5a) built and passed real F12-04-233 acceptance tests (§17-§21). §2, §5a (new), §6a (new), §7, §8, §9 updated to cover the new opt-in flags, inputs, and troubleshooting. |
 | — | 2026-10-13 | Checked `Codes/plumbing_Code.pdf` (real Jordanian plumbing code) against the three unconfirmed Phase 2 reference tables (§5a). Domestic water velocity: resolved — `VelocityLimits.xlsx` cold-water max updated 2.4→2.5 m/s to match confirmed code text; hot-water row already matched. Drainage minimum slope: found a real basis conflict (flat 2%/1% UPC-style rule vs. the table's IPC-704.1 diameter-tiered values) — logged in §24 for senior review, no file change made pending that decision. Manhole sizing: code has no sizing table; §5a caveat unaffected. |
 | — | 2026-11-07 | Checked `Codes/HVAC_Code.pdf`, `Codes/Firefighting_Code.pdf`, and `Codes/fire code.pdf` (real Jordanian HVAC and fire codes) against the remaining unconfirmed duct/fire rows in `VelocityLimits.xlsx` (§5a) — see §25. Duct/Supply confirmed (8 m/s, cited directly); Duct/Fresh-Outside Air corrected (2.5→2.5-4.5 m/s); Duct/Return and Duct/Exhaust have no Jordanian-code value to confirm against (genuine gap, placeholders stand). All four fire rows: neither fire code tabulates pipe velocity at all (sized by flow/pressure instead) — no change, but Fire - Hose Reel's Code Basis (BS EN 671) was flagged as a mismatch against what the Jordanian code actually models it on (NFPA 14 Class II/III) for senior review. |
+| — | 2026-11-10 | Checked 5 new Saudi/UAE CIBSE design guides (Abu Dhabi/Dubai/Saudi Mechanical, Saudi Electrical, Saudi Public Health) against the reference tables — see §27. Three mechanical guides and the electrical guide had zero overlap with current checks. Saudi Public Health guide: added corroborating Notes (no logic change) to `VelocityLimits.xlsx`'s Domestic Cold/Hot Water and Fuel Gas rows and `LoadCalcChecklist.xlsx`'s Tank Capacity Derivation row. Found a genuine gap (no location/acoustic dimension on water-supply velocity limits) and four net-new scope items (condensate sizing, stormwater sizing, water-storage numeric check, future electrical-checks phase) — all logged for later per user decision, none built. |
 
 ## 11. Resolved: mechanical layer naming standard (2026-09-12)
 
@@ -1358,3 +1359,69 @@ None of these three were built — they'd each need their own new check
 and reference table (same category of decision as §24's slope basis
 conflict), not a fit for an existing file to just edit. No file changed
 for these three; only `LoadCalcChecklist.xlsx`'s note was updated.
+
+## 27. Checked 5 new Saudi/UAE design guides against the reference tables (2026-11-10)
+
+User added 5 CIBSE "Design Guide" PDFs to `Codes/`: Abu Dhabi — Mechanical
+(2021), Dubai — Mechanical (2020), Saudi Arabia — Mechanical (2021), Saudi
+Arabia — Electrical (2021), Saudi Arabia — Public Health (2021). Checked
+all five against `VelocityLimits.xlsx`, `DrainageSlopeLimits.xlsx`,
+`ManholeSizeLimits.xlsx`, and `LoadCalcChecklist.xlsx` (same pattern as
+§25/§26, but for Gulf design guides rather than Jordanian code text — two
+of the five PDFs were owner-password-encrypted; `pypdf` needed the
+`cryptography` package installed to open them, now present in the
+project's `.venv`).
+
+**Three of the five (Abu Dhabi/Dubai/Saudi Mechanical) are high-level
+design-parameter guides — zero overlap.** Climate zones, envelope
+U-values, lighting power density, infiltration/ventilation rates, building
+pressurisation, demand-control-ventilation thresholds, chiller CoP/EER,
+car-park garage ventilation (6 ACH normal / 10 ACH smoke mode, both Abu
+Dhabi and Dubai). None of this is duct/pipe velocity, drainage slope,
+manhole sizing, or a load-calc-checklist keyword — nothing to update.
+
+**Saudi Electrical has zero overlap either** — confirmed by grepping its
+full extracted text for velocity/slope/manhole/fire-pump keywords (no
+hits). The tool has no electrical check category today, so this guide is
+only a potential seed for a future electrical-checks phase, not an update
+to anything existing.
+
+**Saudi Public Health guide had real, relevant content — applied as
+Notes-only corroboration, no schema/logic change (same low-risk posture as
+§26):**
+- Table 3.1 (source: IoP Plumbing Engineering Services Design Guide, Table
+  17) gives max water-supply-pipe velocity **by location/acoustic
+  sensitivity**: plant room/riser 2.0 m/s (metal)/2.5 m/s (plastic), down
+  to 1.0 m/s in bedrooms and 0.5-0.75 m/s in theatres/recording studios.
+  `VelocityLimits.xlsx`'s flat Domestic Cold Water (2.5) and Hot Water
+  (1.5) ceilings aren't wrong — they match the plant-room and ceiling-void
+  ends of this same range respectively — but the check has no location
+  dimension, so a bedroom-routed cold-water pipe at 2.4 m/s would silently
+  pass today even though acoustically it should be capped near 1.0 m/s.
+  Added as a corroborating note on both rows. **User decision (2026-11-10):
+  log this gap, don't build the location dimension now** — logged here for
+  whenever that's revisited.
+- Fuel gas entry pressures (LPG 350 mbar/up to 1.4 bar, natural gas 75
+  mbar) corroborate the existing Fuel Gas row's "sized by pressure drop,
+  not velocity" basis — added as a note, row stays Active=N, no velocity
+  number introduced.
+- Table 4.1 (source: MEWA Water & Wastewater Master Plan Guidelines) gives
+  a real non-fire numeric basis for domestic water storage (1-2 days x
+  10-350 litre/person/day by building type) — added to
+  `LoadCalcChecklist.xlsx`'s "Tank Capacity Derivation" row as reference
+  info, same posture as the existing Jordanian fire-reserve note. Checklist
+  item itself unchanged: still presence-only.
+
+**Found, not yet actioned — net-new scope, logged per the user's decision
+(2026-11-10) rather than built:**
+- Condensate drain pipe minimum diameter by refrigeration tonnage (Saudi
+  Public Health Table 8.2) — no existing check covers condensate sizing.
+- Stormwater/rainwater sizing (1:100yr/60min design storm, min 150 mm/h
+  downpipe sizing basis, soakaway volume-balance method) — no existing
+  check covers stormwater.
+- The acoustic/location velocity dimension above.
+- Saudi Electrical Design Guide as a future electrical-checks-phase seed.
+
+All four logged in `docs/PHASE1_PLAN.md`'s deferred list and project
+memory; none built this session. 117 tests still pass (notes-only
+changes, no check logic touched).

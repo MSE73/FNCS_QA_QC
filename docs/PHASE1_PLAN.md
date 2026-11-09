@@ -250,6 +250,7 @@ Every loader does case-insensitive/trimmed header matching and raises a specific
 - `checks/registry.py` is a flat list of check specs — Phase 2's code-compliance checks (ventilation, HVAC load, tank sizing, drainage, manholes, velocity, duct sizing) register the same way, keyed to new file kinds (calc Excel/PDF), writing into the reserved `CodeCompliance` sheet. Requires deciding a standard calc-input template or building per-source parsers (Excel/PDF/HAP/Elite) as a Phase 2 prerequisite.
 - `revit/handler.py` stub swaps for real logic (pyRevit CLI subprocess call, or a compiled add-in) as a one-file change once Revit automation is worth the investment.
 - Any check can be disabled per run via `--disable-check <id>` for gradual rollout.
+- **Logged 2026-11-10, not yet scoped (found checking new Saudi/UAE design guides against the reference tables — `docs/PROCEDURE.md` §27):** (1) add a location/acoustic-sensitivity dimension to `VelocityLimits.xlsx`'s domestic water-supply rows (plant room down to a bedroom/theatre ceiling, per CIBSE's Saudi Public Health guide, Table 3.1) instead of today's flat per-fluid ceiling; (2) condensate drain pipe minimum-diameter check (by refrigeration tonnage); (3) stormwater/rainwater sizing check (1:100yr/60min design storm); (4) a future electrical-checks phase, seeded by the new Saudi Electrical Design Guide (`Codes/Design Guide for Saudi Arabia - Electrical (2021).pdf`) — the tool has no electrical check category today.
 
 ### Phase 2 overall scope: the technical/code-compliance audit basket (drafted 2026-09-14)
 
